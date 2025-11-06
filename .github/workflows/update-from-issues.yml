@@ -1,0 +1,39 @@
+name: Update GBB from Issue
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+jobs:
+  deploy:
+    if: contains(github.event.issue.labels.*.name, 'deploy')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write HTML from issue body (base64)
+        env:
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          python - << 'PY'
+import os, base64, sys
+b64 = os.environ.get('BODY','').strip()
+if b64.startswith('b64:'): b64 = b64[4:].strip()
+html = base64.b64decode(b64).decode('utf-8','replace')
+open('index.html','w',encoding='utf-8').write(html)
+PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add index.html
+          git commit -m "Deploy from issue #${{ github.event.issue.number }}"
+          git push
+      - name: Close issue
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          labels: deployed
+      - name: Comment + close
+        uses: peter-evans/close-issue@v3
+        with:
+          comment: "Deployed. ✅ Visit: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
