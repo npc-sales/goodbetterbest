@@ -1,11 +1,12 @@
 name: Update GBB from Issue (Hardened)
 
 on:
-  # Tap-to-deploy by opening an issue (or adding the label) — must have label "deploy"
-  issues:
-    types: [opened, labeled]
-  # Manual deploy button (Actions tab → Run workflow)
   workflow_dispatch:
+    inputs:
+      base64_html:
+        description: "Paste b64:… here"
+        required: true
+        type: string
 
 permissions:
   contents: write
