@@ -1,12 +1,14 @@
-name: Update GBB from Issue (Hardened)
+name: Update GBB from Issue (Manual Ready)
 
 on:
   workflow_dispatch:
     inputs:
       base64_html:
-        description: "Paste b64:… here"
-        required: true
+        description: "Paste base64 HTML starting with b64: (or leave empty if using issues)"
+        required: false
         type: string
+  issues:
+    types: [opened, labeled]
 
 permissions:
   contents: write
@@ -14,69 +16,72 @@ permissions:
 
 jobs:
   deploy:
-    # Only run if:
-    #  - the issue has the "deploy" label, AND
-    #  - the actor is your account (prevents others from triggering), OR
-    #  - it was manually run (workflow_dispatch)
+    # Only allow you to trigger via issue label, or anyone via manual button
     if: >
       (github.event_name == 'workflow_dispatch')
-      || (
-        contains(github.event.issue.labels.*.name, 'deploy')
-        && github.actor == 'npc-sales'
-      )
+      || (contains(github.event.issue.labels.*.name, 'deploy') && github.actor == 'npc-sales')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Select source content:
-      # - If it's an issues-based run, BODY = issue body (base64)
-      # - If it's a manual run, you can paste base64 as an input in the UI (optional)
-      - name: Resolve HTML source (base64)
-        id: src
+      - name: Determine source (manual input or issue body)
+        id: pick
         env:
-          BODY_ISSUE: ${{ github.event.issue.body }}
-          BODY_MANUAL: ${{ inputs.base64_html || '' }}
+          MANUAL: ${{ inputs.base64_html }}
+          ISSUE: ${{ github.event.issue.body }}
         run: |
-          echo "body=${BODY_ISSUE}${BODY_MANUAL}" >> $GITHUB_OUTPUT
+          set -e
+          if [ -n "$MANUAL" ]; then
+            echo "$MANUAL" > SOURCE.txt
+            echo "mode=manual" >> $GITHUB_OUTPUT
+          else
+            echo "$ISSUE" > SOURCE.txt
+            echo "mode=issue" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Write HTML from base64
-        env:
-          BODY: ${{ steps.src.outputs.body }}
+      - name: Write index.html
         run: |
-          python - << 'PY'
-import os, base64, sys
-b64 = os.environ.get('BODY','').strip()
-if not b64:
-    # Nothing to deploy; fail clearly
-    print("ERROR: No base64 HTML found. Put base64 in the issue body or as manual input.")
-    sys.exit(1)
-if b64.startswith('b64:'):
-    b64 = b64[4:].strip()
-try:
-    html = base64.b64decode(b64).decode('utf-8','replace')
-except Exception as e:
-    print("ERROR: Base64 decode failed:", e)
-    sys.exit(1)
-open('index.html','w',encoding='utf-8').write(html)
-print("Wrote index.html ({} bytes)".format(len(html)))
+          python - <<'PY'
+import os, base64, shutil, sys
+data = open('SOURCE.txt','rb').read().decode('utf-8', 'replace').strip()
+if not data:
+    print("ERROR: No source provided (manual input or issue body)."); sys.exit(1)
+
+low = data.lower().strip()
+# Option 1: use: <path-in-repo>
+if low.startswith('use:'):
+    path = data.split(':',1)[1].strip()
+    if not os.path.isfile(path):
+        print("ERROR: File not found:", path); sys.exit(1)
+    shutil.copy(path, 'index.html')
+# Option 2: b64:<base64-of-html>
+else:
+    if low.startswith('b64:'):
+        data = data[4:].strip()
+    try:
+        html = base64.b64decode(data)
+    except Exception as e:
+        print("ERROR: Base64 decode failed:", e); sys.exit(1)
+    open('index.html','wb').write(html)
+print("OK wrote index.html")
 PY
 
-      - name: Commit to main
+      - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add index.html
-          git commit -m "Deploy from ${GITHUB_EVENT_NAME} #${{ github.event.issue.number || 'manual' }}"
+          git commit -m "Deploy via ${GITHUB_EVENT_NAME}"
           git push
 
-      - name: Label as deployed (issues-only)
-        if: github.event_name != 'workflow_dispatch'
+      - name: Label as deployed (issues only)
+        if: github.event_name == 'issues'
         uses: actions-ecosystem/action-add-labels@v1
         with:
           labels: deployed
 
-      - name: Comment + close issue (issues-only)
-        if: github.event_name != 'workflow_dispatch'
+      - name: Comment + close (issues only)
+        if: github.event_name == 'issues'
         uses: peter-evans/close-issue@v3
         with:
           comment: "Deployed. ✅ Visit: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
