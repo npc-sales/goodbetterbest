@@ -1,39 +1,81 @@
-name: Update GBB from Issue
+name: Update GBB from Issue (Hardened)
+
 on:
+  # Tap-to-deploy by opening an issue (or adding the label) — must have label "deploy"
   issues:
-    types: [opened]
+    types: [opened, labeled]
+  # Manual deploy button (Actions tab → Run workflow)
+  workflow_dispatch:
+
 permissions:
   contents: write
   issues: write
+
 jobs:
   deploy:
-    if: contains(github.event.issue.labels.*.name, 'deploy')
+    # Only run if:
+    #  - the issue has the "deploy" label, AND
+    #  - the actor is your account (prevents others from triggering), OR
+    #  - it was manually run (workflow_dispatch)
+    if: >
+      (github.event_name == 'workflow_dispatch')
+      || (
+        contains(github.event.issue.labels.*.name, 'deploy')
+        && github.actor == 'npc-sales'
+      )
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Write HTML from issue body (base64)
+
+      # Select source content:
+      # - If it's an issues-based run, BODY = issue body (base64)
+      # - If it's a manual run, you can paste base64 as an input in the UI (optional)
+      - name: Resolve HTML source (base64)
+        id: src
         env:
-          BODY: ${{ github.event.issue.body }}
+          BODY_ISSUE: ${{ github.event.issue.body }}
+          BODY_MANUAL: ${{ inputs.base64_html || '' }}
+        run: |
+          echo "body=${BODY_ISSUE}${BODY_MANUAL}" >> $GITHUB_OUTPUT
+
+      - name: Write HTML from base64
+        env:
+          BODY: ${{ steps.src.outputs.body }}
         run: |
           python - << 'PY'
 import os, base64, sys
 b64 = os.environ.get('BODY','').strip()
-if b64.startswith('b64:'): b64 = b64[4:].strip()
-html = base64.b64decode(b64).decode('utf-8','replace')
+if not b64:
+    # Nothing to deploy; fail clearly
+    print("ERROR: No base64 HTML found. Put base64 in the issue body or as manual input.")
+    sys.exit(1)
+if b64.startswith('b64:'):
+    b64 = b64[4:].strip()
+try:
+    html = base64.b64decode(b64).decode('utf-8','replace')
+except Exception as e:
+    print("ERROR: Base64 decode failed:", e)
+    sys.exit(1)
 open('index.html','w',encoding='utf-8').write(html)
+print("Wrote index.html ({} bytes)".format(len(html)))
 PY
-      - name: Commit
+
+      - name: Commit to main
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add index.html
-          git commit -m "Deploy from issue #${{ github.event.issue.number }}"
+          git commit -m "Deploy from ${GITHUB_EVENT_NAME} #${{ github.event.issue.number || 'manual' }}"
           git push
-      - name: Close issue
+
+      - name: Label as deployed (issues-only)
+        if: github.event_name != 'workflow_dispatch'
         uses: actions-ecosystem/action-add-labels@v1
         with:
           labels: deployed
-      - name: Comment + close
+
+      - name: Comment + close issue (issues-only)
+        if: github.event_name != 'workflow_dispatch'
         uses: peter-evans/close-issue@v3
         with:
           comment: "Deployed. ✅ Visit: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
