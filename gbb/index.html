@@ -182,12 +182,6 @@
 <script>
 (function(){
   var PRODUCT_ID = 1179;
-  var baseCheckoutPaths = [
-    '/wp-json/npc-gbb/v1/checkout',
-    '/wp-json/npc-gbb-bridge/v1/checkout',
-    '/?rest_route=/npc-gbb/v1/checkout',
-    '/?rest_route=/npc-gbb-bridge/v1/checkout'
-  ];
   var locationOrigin = '';
   if(typeof window !== 'undefined' && window.location){
     if(window.location.origin){
@@ -198,36 +192,6 @@
   }
   var locationProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'https:';
   var locationHost = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '';
-  var CHECKOUT_ENDPOINTS = baseCheckoutPaths.slice();
-  if(locationOrigin){
-    baseCheckoutPaths.forEach(function(path){
-      if(path.indexOf('http') !== 0){
-        CHECKOUT_ENDPOINTS.push(locationOrigin + path);
-      }
-    });
-    CHECKOUT_ENDPOINTS.push(locationOrigin + '/wp-admin/admin-ajax.php?action=npc_gbb_checkout');
-  }
-  CHECKOUT_ENDPOINTS.push('/wp-admin/admin-ajax.php?action=npc_gbb_checkout');
-  if(locationHost){
-    var bareHost = locationHost.replace(/^www\./, '');
-    var candidateHosts = [];
-    if(bareHost && bareHost !== locationHost){
-      candidateHosts.push(bareHost);
-    }
-    var withWww = bareHost ? 'www.' + bareHost : '';
-    if(withWww && withWww !== locationHost){
-      candidateHosts.push(withWww);
-    }
-    candidateHosts.forEach(function(host){
-      baseCheckoutPaths.forEach(function(path){
-        CHECKOUT_ENDPOINTS.push(locationProtocol + '//' + host + path);
-      });
-      CHECKOUT_ENDPOINTS.push(locationProtocol + '//' + host + '/wp-admin/admin-ajax.php?action=npc_gbb_checkout');
-    });
-  }
-  CHECKOUT_ENDPOINTS = CHECKOUT_ENDPOINTS.filter(function(endpoint, index, arr){
-    return arr.indexOf(endpoint) === index;
-  });
   var models = [
     { id: '11', label: 'iPhone 11' },
     { id: '12', label: 'iPhone 12' },
@@ -804,138 +768,33 @@
     var payload = buildPayload(mode);
     var payloadJson = JSON.stringify(payload);
     window.gbbPayloadPreview = payload; // Helpful for support/debug via console
-    sendCheckoutRequest(payloadJson).then(function(result){
-      if(!result){
-        throw new Error('Checkout response missing. Please try again.');
-      }
-      var endpointUsed = result._endpoint || '';
-      if(endpointUsed){
-        window.gbbLastCheckoutEndpoint = endpointUsed;
-      }
-      if(mode === 'paypal' && result.paypal_url){
-        showStatus('Opening PayPal checkout…', 'success');
-        var paypalWindow = window.open(result.paypal_url, '_blank');
-        if(paypalWindow){
-          paypalWindow.opener = null;
-        } else {
-          window.location.href = result.paypal_url;
-        }
-        return;
-      }
-      var redirectUrl = result.checkout_url || result.redirect || result.url;
-      if(redirectUrl){
-        var successMessage = mode === 'paypal' ? 'Launching checkout on Lowbies.com…' : 'Redirecting you to secure checkout…';
-        showStatus(successMessage, 'success');
-        window.location.href = redirectUrl;
-        return;
-      }
-      throw new Error('Checkout link missing. Please contact support.');
-    }).catch(function(error){
-      window.gbbLastCheckoutError = error;
-      console.error('Checkout error', error);
-      var message = error && error.message ? error.message : 'Checkout request failed. Please try again.';
-      showStatus(message, 'error');
-      var manualUrl = offerManualCheckout(payloadJson, mode, message);
-      if(manualUrl){
-        setTimeout(function(){
-          try {
-            window.location.href = manualUrl;
-          } catch(_err){}
-        }, 400);
-      }
-    }).finally(function(){
-      setLoading(false);
-    });
-  }
 
-  function sendCheckoutRequest(payloadJson){
-    var attempt = 0;
-    var lastError = null;
-    function tryEndpoint(){
-      if(attempt >= CHECKOUT_ENDPOINTS.length){
-        if(lastError){
-          throw lastError;
-        }
-        throw new Error('Checkout request failed. Please try again.');
+    var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
+    if(!manualUrl){
+      var fallbackMessage = 'Unable to prepare checkout link. Please contact support.';
+      showStatus(fallbackMessage, 'error');
+      offerManualCheckout(payloadJson, mode, fallbackMessage);
+      setLoading(false);
+      return;
+    }
+
+    var statusCopy = mode === 'paypal' ? 'Opening secure Lowbies.com checkout…' : 'Redirecting you to secure checkout…';
+    showStatus(statusCopy, 'success');
+
+    setTimeout(function(){
+      try {
+        window.location.href = manualUrl;
+      } catch(err){
+        console.error('Manual checkout redirect failed', err);
+        showStatus('We could not open checkout automatically. Please use the link below.', 'error');
+        offerManualCheckout(payloadJson, mode, statusCopy);
+        setLoading(false);
       }
-      var endpoint = CHECKOUT_ENDPOINTS[attempt++];
-      var options = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Cache-Control': 'no-cache'
-        },
-        credentials: 'include',
-        body: payloadJson
-      };
-      return fetch(endpoint, options).then(function(response){
-        if(!response.ok){
-          return response.text().then(function(text){
-            var trimmed = (text || '').trim();
-            var message = trimmed || ('Checkout request failed (' + response.status + ').');
-            var error = new Error(message);
-            error.status = response.status;
-            error.endpoint = endpoint;
-            throw error;
-          });
-        }
-        var contentType = response.headers && typeof response.headers.get === 'function' ? (response.headers.get('content-type') || '') : '';
-        if(contentType.indexOf('application/json') !== -1){
-          return response.json().catch(function(){
-            var parseError = new Error('Unable to read checkout response.');
-            parseError.endpoint = endpoint;
-            throw parseError;
-          });
-        }
-        return response.text().then(function(text){
-          var trimmedText = (text || '').trim();
-          if(!trimmedText){
-            var emptyError = new Error('Empty checkout response.');
-            emptyError.endpoint = endpoint;
-            throw emptyError;
-          }
-          if(/^https?:/i.test(trimmedText)){
-            return { checkout_url: trimmedText, _raw: trimmedText };
-          }
-          try {
-            return JSON.parse(trimmedText);
-          } catch(parseErr){
-            var parseError = new Error('Unable to read checkout response.');
-            parseError.endpoint = endpoint;
-            parseError.raw = trimmedText;
-            throw parseError;
-          }
-        });
-      }).then(function(result){
-        if(result){
-          var hasExplicitSuccess = typeof result.success !== 'undefined';
-          var successValue = hasExplicitSuccess ? Boolean(result.success) : true;
-          if(hasExplicitSuccess && !successValue){
-            var errorMessage = result.message || result.error || 'Unable to start checkout. Please call or text us for help.';
-            var error = new Error(errorMessage);
-            error.endpoint = endpoint;
-            throw error;
-          }
-        }
-        if(result){
-          result._endpoint = endpoint;
-        }
-        return result;
-      }).catch(function(error){
-        lastError = error;
-        if(window.console && window.console.warn){
-          window.console.warn('Checkout endpoint failed', endpoint, error);
-        }
-        return tryEndpoint();
-      });
-    }
-    try {
-      return tryEndpoint();
-    } catch(err){
-      return Promise.reject(err);
-    }
+    }, 150);
+
+    setTimeout(function(){
+      setLoading(false);
+    }, 1200);
   }
 
   function cacheDom(){
