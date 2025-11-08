@@ -348,12 +348,19 @@
     }
   }
 
-  function buildManualCheckoutUrl(mode, payloadJson){
+  function getSiteBase(){
     var base = locationOrigin || (locationProtocol + '//' + locationHost);
     if(!base){
       return '';
     }
-    var normalizedBase = base.replace(/\/$/, '');
+    return base.replace(/\/$/, '');
+  }
+
+  function buildManualCheckoutUrl(mode, payloadJson){
+    var normalizedBase = getSiteBase();
+    if(!normalizedBase){
+      return '';
+    }
     var url = normalizedBase + '/checkout/?add-to-cart=' + PRODUCT_ID;
     var encodedPayload = encodePayloadForUrl(payloadJson);
     if(encodedPayload){
@@ -363,6 +370,40 @@
       url += '&checkout_mode=' + encodeURIComponent(mode);
     }
     return url;
+  }
+
+  function getCheckoutEndpoints(mode){
+    var normalizedBase = getSiteBase();
+    if(!normalizedBase){
+      return [];
+    }
+    var endpoints = [];
+    var seen = {};
+    var jsonEndpoints = [
+      normalizedBase + '/wp-json/npc-gbb/v1/checkout',
+      normalizedBase + '/wp-json/npc/v1/gbb/checkout',
+      normalizedBase + '/wp-json/npc-gbb/v1/checkout?mode=' + encodeURIComponent(mode || 'checkout'),
+      normalizedBase + '/wp-json/npc/v1/gbb/checkout?mode=' + encodeURIComponent(mode || 'checkout')
+    ];
+    for(var i = 0; i < jsonEndpoints.length; i++){
+      var url = jsonEndpoints[i];
+      if(!seen[url]){
+        endpoints.push({ url: url, type: 'json' });
+        seen[url] = true;
+      }
+    }
+    var ajaxEndpoints = [
+      normalizedBase + '/wp-admin/admin-ajax.php',
+      normalizedBase + '/wp-admin/admin-ajax.php?action=npc_gbb_checkout'
+    ];
+    for(var j = 0; j < ajaxEndpoints.length; j++){
+      var ajaxUrl = ajaxEndpoints[j];
+      if(!seen[ajaxUrl]){
+        endpoints.push({ url: ajaxUrl, type: 'form' });
+        seen[ajaxUrl] = true;
+      }
+    }
+    return endpoints;
   }
 
   function offerManualCheckout(payloadJson, mode, message){
@@ -389,6 +430,70 @@
     dom.checkoutStatus.appendChild(link);
     dom.checkoutStatus.appendChild(document.createTextNode('.'));
     return manualUrl;
+  }
+
+  function parseRedirect(response, fallbackBase){
+    if(!response){
+      return '';
+    }
+    var data = response;
+    if(typeof response === 'string'){
+      try {
+        data = JSON.parse(response);
+      } catch(err){
+        var match = response.match(/https?:\/\/[^"'\s<>]+/);
+        if(match && match[0]){
+          return match[0];
+        }
+        return '';
+      }
+    }
+    if(data && typeof data === 'object'){
+      if(data.redirect){
+        return data.redirect;
+      }
+      if(data.url){
+        return data.url;
+      }
+      if(data.data){
+        if(typeof data.data === 'string'){
+          return data.data;
+        }
+        if(data.data && data.data.redirect){
+          return data.data.redirect;
+        }
+        if(data.data && data.data.url){
+          return data.data.url;
+        }
+      }
+    }
+    if(fallbackBase && data && data.path){
+      return fallbackBase.replace(/\/$/, '') + '/' + String(data.path).replace(/^\//,'');
+    }
+    return '';
+  }
+
+  function redirectTo(url, mode, payloadJson){
+    if(!url){
+      return false;
+    }
+    var finalUrl = url;
+    if(url.charAt(0) === '/' && getSiteBase()){
+      finalUrl = getSiteBase() + url;
+    }
+    var statusCopy = mode === 'paypal' ? 'Opening secure Lowbies.com checkout…' : 'Redirecting you to secure checkout…';
+    showStatus(statusCopy, 'success');
+    setTimeout(function(){
+      try {
+        window.location.href = finalUrl;
+      } catch(err){
+        console.error('Checkout redirect failed', err);
+        showStatus('We could not open checkout automatically. Please use the link below.', 'error');
+        offerManualCheckout(payloadJson, mode, statusCopy);
+        setLoading(false);
+      }
+    }, 150);
+    return true;
   }
 
   function renderSelect(){
@@ -769,32 +874,82 @@
     var payloadJson = JSON.stringify(payload);
     window.gbbPayloadPreview = payload; // Helpful for support/debug via console
 
+    var endpoints = typeof fetch === 'function' ? getCheckoutEndpoints(mode) : [];
     var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
-    if(!manualUrl){
-      var fallbackMessage = 'Unable to prepare checkout link. Please contact support.';
-      showStatus(fallbackMessage, 'error');
-      offerManualCheckout(payloadJson, mode, fallbackMessage);
-      setLoading(false);
+
+    if(!endpoints.length){
+      if(manualUrl){
+        redirectTo(manualUrl, mode, payloadJson);
+        setTimeout(function(){ setLoading(false); }, 1200);
+      } else {
+        var fallbackMessage = 'Unable to prepare checkout link. Please contact support.';
+        showStatus(fallbackMessage, 'error');
+        offerManualCheckout(payloadJson, mode, fallbackMessage);
+        setLoading(false);
+      }
       return;
     }
 
-    var statusCopy = mode === 'paypal' ? 'Opening secure Lowbies.com checkout…' : 'Redirecting you to secure checkout…';
+    var statusCopy = mode === 'paypal' ? 'Opening secure Lowbies.com checkout…' : 'Contacting Lowbies.com checkout…';
     showStatus(statusCopy, 'success');
 
-    setTimeout(function(){
-      try {
-        window.location.href = manualUrl;
-      } catch(err){
-        console.error('Manual checkout redirect failed', err);
-        showStatus('We could not open checkout automatically. Please use the link below.', 'error');
-        offerManualCheckout(payloadJson, mode, statusCopy);
+    var attempt = function(index){
+      if(index >= endpoints.length){
+        var errorMessage = 'Checkout request failed. Please try again.';
+        showStatus(errorMessage, 'error');
+        var manualLink = offerManualCheckout(payloadJson, mode, errorMessage);
+        if(manualLink){
+          setTimeout(function(){
+            try {
+              window.location.href = manualLink;
+            } catch(err){
+              console.error('Manual checkout auto-open failed', err);
+            }
+          }, 300);
+        }
         setLoading(false);
+        return;
       }
-    }, 150);
 
-    setTimeout(function(){
-      setLoading(false);
-    }, 1200);
+      var endpoint = endpoints[index];
+      var requestOptions = { method: 'POST', credentials: 'include' };
+      if(endpoint.type === 'json'){
+        requestOptions.headers = { 'Content-Type': 'application/json' };
+        requestOptions.body = payloadJson;
+      } else {
+        var form = new FormData();
+        if(endpoint.url.indexOf('action=') === -1){
+          form.append('action', 'npc_gbb_checkout');
+        }
+        form.append('mode', mode);
+        form.append('payload', payloadJson);
+        requestOptions.body = form;
+      }
+
+      fetch(endpoint.url, requestOptions).then(function(response){
+        if(!response.ok){
+          throw new Error('HTTP ' + response.status);
+        }
+        var contentType = response.headers.get('content-type') || '';
+        if(contentType.indexOf('application/json') !== -1 || contentType.indexOf('text/json') !== -1){
+          return response.json();
+        }
+        return response.text();
+      }).then(function(body){
+        var redirectUrl = parseRedirect(body, getSiteBase());
+        if(redirectUrl){
+          redirectTo(redirectUrl, mode, payloadJson);
+          setTimeout(function(){ setLoading(false); }, 1200);
+        } else {
+          throw new Error('No redirect URL in response');
+        }
+      }).catch(function(err){
+        console.error('Checkout endpoint failed', endpoint.url, err);
+        attempt(index + 1);
+      });
+    };
+
+    attempt(0);
   }
 
   function cacheDom(){
