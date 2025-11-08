@@ -39,31 +39,31 @@ jobs:
             echo "mode=issue" >> $GITHUB_OUTPUT
           fi
 
-      - name: Write index.html
-        run: |
-          python - <<'PY'
-import os, base64, shutil, sys
-data = open('SOURCE.txt','rb').read().decode('utf-8', 'replace').strip()
-if not data:
-    print("ERROR: No source provided (manual input or issue body)."); sys.exit(1)
+        - name: Write index.html
+          run: |
+            python - <<'PY'
+            import os, base64, shutil, sys
+            data = open('SOURCE.txt','rb').read().decode('utf-8', 'replace').strip()
+            if not data:
+                print("ERROR: No source provided (manual input or issue body)."); sys.exit(1)
 
-low = data.lower().strip()
-# Option 1: use: <path-in-repo>
-if low.startswith('use:'):
-    path = data.split(':',1)[1].strip()
-    if not os.path.isfile(path):
-        print("ERROR: File not found:", path); sys.exit(1)
-    shutil.copy(path, 'index.html')
-# Option 2: b64:<base64-of-html>
-else:
-    if low.startswith('b64:'):
-        data = data[4:].strip()
-    try:
-        html = base64.b64decode(data)
-    except Exception as e:
-        print("ERROR: Base64 decode failed:", e); sys.exit(1)
-    open('index.html','wb').write(html)
-print("OK wrote index.html")
+            low = data.lower().strip()
+            # Option 1: use: <path-in-repo>
+            if low.startswith('use:'):
+                path = data.split(':',1)[1].strip()
+                if not os.path.isfile(path):
+                    print("ERROR: File not found:", path); sys.exit(1)
+                shutil.copy(path, 'index.html')
+            # Option 2: b64:<base64-of-html>
+            else:
+                if low.startswith('b64:'):
+                    data = data[4:].strip()
+                try:
+                    html = base64.b64decode(data)
+                except Exception as e:
+                    print("ERROR: Base64 decode failed:", e); sys.exit(1)
+                open('index.html','wb').write(html)
+            print("OK wrote index.html")
 PY
 
       - name: Commit and push
