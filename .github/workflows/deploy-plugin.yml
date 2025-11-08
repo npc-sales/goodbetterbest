@@ -1,0 +1,24 @@
+name: Deploy MU Plugin
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'mu-plugins/npc-gbb-bridge.php' ]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload MU Plugin to Bluehost
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER_PLUGIN }}
+          username: ${{ secrets.FTP_USERNAME_PLUGIN }}
+          password: ${{ secrets.FTP_PASSWORD_PLUGIN }}
+          protocol: ftps
+          port: 21
+          local-dir: mu-plugins
+          server-dir: /
+          exclude: |
+            **
+            !npc-gbb-bridge.php
