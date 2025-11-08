@@ -372,6 +372,32 @@
     return url;
   }
 
+  function normalizePotentialUrl(value, fallbackBase){
+    if(!value || typeof value !== 'string'){
+      return '';
+    }
+    var trimmed = value.trim();
+    if(!trimmed || /\s/.test(trimmed)){
+      return '';
+    }
+    if(/^https?:\/\//i.test(trimmed)){
+      return trimmed;
+    }
+    if(trimmed.indexOf('//') === 0){
+      return (locationProtocol || 'https:') + trimmed;
+    }
+    if(trimmed.charAt(0) === '/' && fallbackBase){
+      return fallbackBase.replace(/\/$/, '') + trimmed;
+    }
+    if(trimmed.charAt(0) === '?' && fallbackBase){
+      return fallbackBase.replace(/\/$/, '') + '/' + trimmed;
+    }
+    if(fallbackBase && /^[A-Za-z0-9._~!$&'()*+,;=:@/?-]+$/.test(trimmed)){
+      return fallbackBase.replace(/\/$/, '') + '/' + trimmed.replace(/^\/+/, '');
+    }
+    return '';
+  }
+
   function getCheckoutEndpoints(mode){
     var normalizedBase = getSiteBase();
     if(!normalizedBase){
@@ -449,26 +475,34 @@
       }
     }
     if(data && typeof data === 'object'){
-      if(data.redirect){
-        return data.redirect;
+      var direct = normalizePotentialUrl(data.redirect, fallbackBase);
+      if(direct){
+        return direct;
       }
-      if(data.url){
-        return data.url;
+      direct = normalizePotentialUrl(data.url, fallbackBase);
+      if(direct){
+        return direct;
       }
       if(data.data){
         if(typeof data.data === 'string'){
-          return data.data;
+          var nested = normalizePotentialUrl(data.data, fallbackBase);
+          if(nested){
+            return nested;
+          }
         }
-        if(data.data && data.data.redirect){
-          return data.data.redirect;
-        }
-        if(data.data && data.data.url){
-          return data.data.url;
+        if(data.data && typeof data.data === 'object'){
+          var nestedRedirect = normalizePotentialUrl(data.data.redirect, fallbackBase) || normalizePotentialUrl(data.data.url, fallbackBase);
+          if(nestedRedirect){
+            return nestedRedirect;
+          }
         }
       }
     }
     if(fallbackBase && data && data.path){
-      return fallbackBase.replace(/\/$/, '') + '/' + String(data.path).replace(/^\//,'');
+      var viaPath = normalizePotentialUrl(String(data.path), fallbackBase);
+      if(viaPath){
+        return viaPath;
+      }
     }
     return '';
   }
@@ -831,25 +865,41 @@
     var model = getActiveModel();
     var modelKey = getModelKey();
     var addonDetails = getSelectedAddonDetails();
+    var addonLabels = addonDetails.map(function(item){ return item.label; });
+    var addonIds = addonDetails.map(function(item){ return item.id; });
     var priorityOption = priorityOptions.find(function(opt){ return opt.id === state.priority; });
+    var priorityAmount = priorityOption ? priorityOption.price : 0;
+    var priorityKey = state.priority;
+    var modelValue = model ? (model.payload || model.id) : null;
     var configuration = {
       product_id: PRODUCT_ID,
       model: modelKey,
       model_label: getModelLabel(),
-      model_value: model ? model.id : null,
+      model_value: modelValue,
+      model_id: model ? model.id : null,
       tier: state.tier,
       tier_label: tierCopy[state.tier].title,
       tier_note: tierCopy[state.tier].note,
       quality: state.quality,
       quality_label: state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket',
-      priority: state.priority,
+      priority: priorityAmount,
       priority_label: priorityOption ? priorityOption.label : 'Standard Queue',
-      priority_price: priorityOption ? priorityOption.price : 0,
-      addons: addonDetails.map(function(item){ return item.label; }),
+      priority_price: priorityAmount,
+      priority_amount: priorityAmount,
+      priority_selection: priorityKey,
+      addons: addonLabels,
       addons_detail: addonDetails,
+      addons_total: totals.addons,
       pricing: totals,
+      totals: totals,
+      total: totals.total,
+      total_price: totals.total,
+      base_price: totals.base,
+      quality_price: totals.quality,
+      priority_total: totals.priority,
       timestamp: new Date().toISOString(),
-      checkout_mode: mode || 'checkout'
+      checkout_mode: mode || 'checkout',
+      mode: mode || 'checkout'
     };
     var family = getModelFamily();
     if(family){
@@ -861,8 +911,23 @@
     return {
       product_id: PRODUCT_ID,
       quantity: 1,
+      model: modelKey,
+      model_label: getModelLabel(),
+      tier: state.tier,
+      tier_label: tierCopy[state.tier].title,
+      quality: state.quality,
+      quality_label: state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket',
+      priority: priorityAmount,
+      priority_label: priorityOption ? priorityOption.label : 'Standard Queue',
+      priority_amount: priorityAmount,
+      addons: addonLabels,
+      addon_ids: addonIds,
+      totals: totals,
+      total: totals.total,
       configuration: configuration,
-      checkout_mode: mode || 'checkout'
+      checkout_mode: mode || 'checkout',
+      mode: mode || 'checkout',
+      priority_selection: priorityKey
     };
   }
 
