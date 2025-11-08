@@ -75,17 +75,19 @@
   .addon-grid { display:grid; gap:10px; }
   @media (min-width:620px) { .addon-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
   .legal { font-size:11px; color:var(--muted); margin-top:16px; line-height:1.5; }
-  .floating-total { position:fixed; right:24px; bottom:24px; background:var(--accent); color:#fff; padding:16px 20px; border-radius:18px; box-shadow:0 18px 40px rgba(30,102,255,.3); display:flex; flex-direction:column; gap:4px; font-weight:600; z-index:1000; min-width:180px; }
-  .floating-total span.label { font-size:12px; letter-spacing:.08em; text-transform:uppercase; opacity:.8; }
-  .floating-total span.amount { font-size:20px; font-weight:800; }
+  .floating-total { position:fixed; right:24px; bottom:24px; background:var(--card); color:var(--text); padding:18px; border-radius:18px; box-shadow:0 18px 40px rgba(17,17,17,.15); border:1px solid var(--border); display:flex; flex-direction:column; gap:10px; z-index:1000; width:280px; max-width:calc(100vw - 48px); }
+  .floating-total .floating-checkout { width:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:6px; text-align:left; }
+  .floating-total .floating-checkout span.label { font-size:13px; letter-spacing:.02em; text-transform:none; opacity:.95; }
+  .floating-total .floating-checkout span.amount { font-size:20px; font-weight:800; margin-left:auto; }
+  .floating-total .floating-pay { width:100%; border-radius:12px; border:1px solid var(--accent); background:#fff; color:var(--accent); font-weight:600; padding:12px 16px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; text-align:center; }
+  .floating-total .floating-pay:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(30,102,255,.18); }
+  .floating-total .floating-pay[disabled] { opacity:.6; cursor:not-allowed; transform:none; box-shadow:none; }
   @media (min-width:901px){
     .floating-total { display:none; }
   }
   @media (max-width:900px){
-    body { padding-bottom:120px; }
-    .floating-total { left:16px; right:16px; bottom:16px; flex-direction:row; justify-content:space-between; align-items:center; border-radius:14px; }
-    .floating-total span.label { font-size:13px; letter-spacing:0; text-transform:none; opacity:.95; }
-    .floating-total span.amount { font-size:18px; }
+    body { padding-bottom:200px; }
+    .floating-total { left:16px; right:16px; bottom:16px; width:auto; }
   }
 </style>
 </head>
@@ -164,8 +166,11 @@
     </aside>
   </div>
   <div class="floating-total" id="floatingTotal" aria-live="polite">
-    <span class="label">Current total</span>
-    <span class="amount" id="floatingTotalAmount">$0.00</span>
+    <button class="btn-primary floating-checkout" id="floatingCheckoutBtn" type="button">
+      <span class="label" id="floatingCheckoutLabel">Continue to Pay on Lowbies.com</span>
+      <span class="amount" id="floatingTotalAmount">$0.00</span>
+    </button>
+    <button class="floating-pay" id="floatingPayBtn" type="button">Pay with credit card or PayPal</button>
   </div>
 </div>
 
@@ -241,6 +246,10 @@
   var tierDiff = { good: -19, better: 0, premium: 20 };
 
   var dom = {};
+  var CTA_TEXT = 'Continue to Pay on Lowbies.com';
+  var CTA_PAY_TEXT = 'Pay with credit card or PayPal';
+  var CTA_LOADING_TEXT = 'Preparing checkout…';
+  var CTA_LOADING_ALT_TEXT = 'Preparing…';
 
   function $(id){ return document.getElementById(id); }
 
@@ -501,6 +510,12 @@
     });
 
     dom.checkoutBtn.addEventListener('click', submitCheckout);
+    if(dom.floatingCheckoutBtn){
+      dom.floatingCheckoutBtn.addEventListener('click', submitCheckout);
+    }
+    if(dom.floatingPayBtn){
+      dom.floatingPayBtn.addEventListener('click', submitCheckout);
+    }
   }
 
   function showStatus(message, type){
@@ -518,10 +533,30 @@
   function setLoading(loading){
     if(loading){
       dom.checkoutBtn.setAttribute('disabled','disabled');
-      dom.checkoutBtn.textContent = 'Preparing checkout…';
+      dom.checkoutBtn.textContent = CTA_LOADING_TEXT;
+      if(dom.floatingCheckoutBtn){
+        dom.floatingCheckoutBtn.setAttribute('disabled','disabled');
+      }
+      if(dom.floatingCheckoutLabel){
+        dom.floatingCheckoutLabel.textContent = CTA_LOADING_TEXT;
+      }
+      if(dom.floatingPayBtn){
+        dom.floatingPayBtn.setAttribute('disabled','disabled');
+        dom.floatingPayBtn.textContent = CTA_LOADING_ALT_TEXT;
+      }
     } else {
       dom.checkoutBtn.removeAttribute('disabled');
-      dom.checkoutBtn.textContent = 'Continue to Pay on Lowbies.com';
+      dom.checkoutBtn.textContent = CTA_TEXT;
+      if(dom.floatingCheckoutBtn){
+        dom.floatingCheckoutBtn.removeAttribute('disabled');
+      }
+      if(dom.floatingCheckoutLabel){
+        dom.floatingCheckoutLabel.textContent = CTA_TEXT;
+      }
+      if(dom.floatingPayBtn){
+        dom.floatingPayBtn.removeAttribute('disabled');
+        dom.floatingPayBtn.textContent = CTA_PAY_TEXT;
+      }
     }
   }
 
@@ -596,6 +631,9 @@
       pricePriority: $('pricePriority'),
       priceAddons: $('priceAddons'),
       priceTotal: $('priceTotal'),
+      floatingCheckoutBtn: $('floatingCheckoutBtn'),
+      floatingCheckoutLabel: $('floatingCheckoutLabel'),
+      floatingPayBtn: $('floatingPayBtn'),
       floatingTotalAmount: $('floatingTotalAmount'),
       summaryWarranty: $('summaryWarranty'),
       warrantyNote: $('warrantyNote'),
