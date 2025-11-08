@@ -182,33 +182,96 @@
 <script>
 (function(){
   var PRODUCT_ID = 1179;
-  var CHECKOUT_ENDPOINTS = [
+  var baseCheckoutPaths = [
     '/wp-json/npc-gbb/v1/checkout',
     '/wp-json/npc-gbb-bridge/v1/checkout',
     '/?rest_route=/npc-gbb/v1/checkout',
     '/?rest_route=/npc-gbb-bridge/v1/checkout'
   ];
+  var locationOrigin = '';
+  if(typeof window !== 'undefined' && window.location){
+    if(window.location.origin){
+      locationOrigin = window.location.origin;
+    } else {
+      locationOrigin = window.location.protocol + '//' + window.location.host;
+    }
+  }
+  var locationProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'https:';
+  var locationHost = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '';
+  var CHECKOUT_ENDPOINTS = baseCheckoutPaths.slice();
+  if(locationOrigin){
+    baseCheckoutPaths.forEach(function(path){
+      if(path.indexOf('http') !== 0){
+        CHECKOUT_ENDPOINTS.push(locationOrigin + path);
+      }
+    });
+    CHECKOUT_ENDPOINTS.push(locationOrigin + '/wp-admin/admin-ajax.php?action=npc_gbb_checkout');
+  }
+  CHECKOUT_ENDPOINTS.push('/wp-admin/admin-ajax.php?action=npc_gbb_checkout');
+  if(locationHost){
+    var bareHost = locationHost.replace(/^www\./, '');
+    var candidateHosts = [];
+    if(bareHost && bareHost !== locationHost){
+      candidateHosts.push(bareHost);
+    }
+    var withWww = bareHost ? 'www.' + bareHost : '';
+    if(withWww && withWww !== locationHost){
+      candidateHosts.push(withWww);
+    }
+    candidateHosts.forEach(function(host){
+      baseCheckoutPaths.forEach(function(path){
+        CHECKOUT_ENDPOINTS.push(locationProtocol + '//' + host + path);
+      });
+      CHECKOUT_ENDPOINTS.push(locationProtocol + '//' + host + '/wp-admin/admin-ajax.php?action=npc_gbb_checkout');
+    });
+  }
+  CHECKOUT_ENDPOINTS = CHECKOUT_ENDPOINTS.filter(function(endpoint, index, arr){
+    return arr.indexOf(endpoint) === index;
+  });
   var models = [
-    'iPhone 11','iPhone 12','iPhone 12 Pro','iPhone 12 Pro Max','iPhone 13 Mini','iPhone 13','iPhone 13 Pro','iPhone 13 Pro Max',
-    'iPhone 14','iPhone 14 Plus','iPhone 14 Pro','iPhone 14 Pro Max','iPhone 15','iPhone 15 Plus','iPhone 15 Pro','iPhone 15 Pro Max',
-    'iPhone 16','iPhone 16 Plus','iPhone 16 Pro','iPhone 16 Pro Max','iPhone 6 – XR (all models)'
+    { id: '11', label: 'iPhone 11' },
+    { id: '12', label: 'iPhone 12' },
+    { id: '12 Pro', label: 'iPhone 12 Pro' },
+    { id: '12 Pro Max', label: 'iPhone 12 Pro Max' },
+    { id: '13 Mini', label: 'iPhone 13 Mini' },
+    { id: '13', label: 'iPhone 13' },
+    { id: '13 Pro', label: 'iPhone 13 Pro' },
+    { id: '13 Pro Max', label: 'iPhone 13 Pro Max' },
+    { id: '14', label: 'iPhone 14' },
+    { id: '14 Plus', label: 'iPhone 14 Plus' },
+    { id: '14 Pro', label: 'iPhone 14 Pro' },
+    { id: '14 Pro Max', label: 'iPhone 14 Pro Max' },
+    { id: '15', label: 'iPhone 15' },
+    { id: '15 Plus', label: 'iPhone 15 Plus' },
+    { id: '15 Pro', label: 'iPhone 15 Pro' },
+    { id: '15 Pro Max', label: 'iPhone 15 Pro Max' },
+    { id: '16', label: 'iPhone 16' },
+    { id: '16 Plus', label: 'iPhone 16 Plus' },
+    { id: '16 Pro', label: 'iPhone 16 Pro' },
+    { id: '16 Pro Max', label: 'iPhone 16 Pro Max' },
+    {
+      id: 'legacy-6-xr',
+      label: 'iPhone 6 – XR (all models)',
+      payload: '6',
+      family: ['6','6 Plus','6s','6s Plus','7','7 Plus','8','8 Plus','X','XR']
+    }
   ];
   var baseBetter = {
-    'iPhone 6 – XR (all models)':99,
-    'iPhone 11':139,'iPhone 12':139,'iPhone 12 Pro':169,'iPhone 12 Pro Max':209,
-    'iPhone 13 Mini':149,'iPhone 13':149,'iPhone 13 Pro':169,'iPhone 13 Pro Max':209,
-    'iPhone 14':149,'iPhone 14 Plus':149,'iPhone 14 Pro':169,'iPhone 14 Pro Max':209,
-    'iPhone 15':149,'iPhone 15 Plus':149,'iPhone 15 Pro':169,'iPhone 15 Pro Max':209,
-    'iPhone 16':149,'iPhone 16 Plus':149,'iPhone 16 Pro':169,'iPhone 16 Pro Max':209
+    '6':99,
+    '11':139,'12':139,'12 Pro':169,'12 Pro Max':209,
+    '13 Mini':149,'13':149,'13 Pro':169,'13 Pro Max':209,
+    '14':149,'14 Plus':149,'14 Pro':169,'14 Pro Max':209,
+    '15':149,'15 Plus':149,'15 Pro':169,'15 Pro Max':209,
+    '16':149,'16 Plus':149,'16 Pro':169,'16 Pro Max':209
   };
   var oledSurcharge = {
-    'iPhone 6 – XR (all models)':null,
-    'iPhone 11':null,
-    'iPhone 12':99,'iPhone 12 Pro':99,'iPhone 12 Pro Max':129,
-    'iPhone 13 Mini':139,'iPhone 13':109,'iPhone 13 Pro':189,'iPhone 13 Pro Max':219,
-    'iPhone 14':119,'iPhone 14 Plus':179,'iPhone 14 Pro':249,'iPhone 14 Pro Max':349,
-    'iPhone 15':249,'iPhone 15 Plus':209,'iPhone 15 Pro':359,'iPhone 15 Pro Max':439,
-    'iPhone 16':299,'iPhone 16 Plus':409,'iPhone 16 Pro':449,'iPhone 16 Pro Max':529
+    '6':null,
+    '11':null,
+    '12':99,'12 Pro':99,'12 Pro Max':129,
+    '13 Mini':139,'13':109,'13 Pro':189,'13 Pro Max':219,
+    '14':119,'14 Plus':179,'14 Pro':249,'14 Pro Max':349,
+    '15':249,'15 Plus':209,'15 Pro':359,'15 Pro Max':439,
+    '16':299,'16 Plus':409,'16 Pro':449,'16 Pro Max':529
   };
   var tierCopy = {
     good: {
@@ -241,7 +304,7 @@
   ];
 
   var state = {
-    model: models[0],
+    model: models[0] || null,
     tier: 'better',
     quality: 'aftermarket',
     priority: 'standard',
@@ -264,15 +327,113 @@
     return '$' + amount.toFixed(2);
   }
 
+  function getModelById(id){
+    for(var i = 0; i < models.length; i++){
+      if(models[i].id === id){
+        return models[i];
+      }
+    }
+    return models[0];
+  }
+
+  function getActiveModel(){
+    return state.model || models[0];
+  }
+
+  function getModelKey(){
+    var model = getActiveModel();
+    return model && (model.payload || model.id);
+  }
+
+  function getModelLabel(){
+    var model = getActiveModel();
+    return model && model.label ? model.label : '';
+  }
+
+  function getModelFamily(){
+    var model = getActiveModel();
+    if(model && Array.isArray(model.family)){
+      return model.family.slice();
+    }
+    return null;
+  }
+
+  function encodePayloadForUrl(payloadJson){
+    if(!payloadJson){
+      return '';
+    }
+    try {
+      if(typeof TextEncoder !== 'undefined'){
+        var encoder = new TextEncoder();
+        var bytes = encoder.encode(payloadJson);
+        var binary = '';
+        for(var i = 0; i < bytes.length; i++){
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return encodeURIComponent(btoa(binary));
+      }
+    } catch(err){}
+    try {
+      return encodeURIComponent(btoa(unescape(encodeURIComponent(payloadJson))));
+    } catch(err2){
+      try {
+        return encodeURIComponent(btoa(payloadJson));
+      } catch(err3){
+        return encodeURIComponent(payloadJson);
+      }
+    }
+  }
+
+  function buildManualCheckoutUrl(mode, payloadJson){
+    var base = locationOrigin || (locationProtocol + '//' + locationHost);
+    if(!base){
+      return '';
+    }
+    var normalizedBase = base.replace(/\/$/, '');
+    var url = normalizedBase + '/checkout/?add-to-cart=' + PRODUCT_ID;
+    var encodedPayload = encodePayloadForUrl(payloadJson);
+    if(encodedPayload){
+      url += '&gbb_payload=' + encodedPayload;
+    }
+    if(mode && mode !== 'checkout'){
+      url += '&checkout_mode=' + encodeURIComponent(mode);
+    }
+    return url;
+  }
+
+  function offerManualCheckout(payloadJson, mode, message){
+    if(!dom.checkoutStatus){
+      return;
+    }
+    var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
+    if(!manualUrl){
+      return;
+    }
+    dom.checkoutStatus.classList.remove('hidden', 'success');
+    dom.checkoutStatus.classList.add('error');
+    dom.checkoutStatus.textContent = '';
+    var note = document.createElement('span');
+    note.textContent = (message ? message + ' ' : 'We could not reach checkout automatically. ');
+    var link = document.createElement('a');
+    link.href = manualUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'Open checkout manually on Lowbies.com';
+    dom.checkoutStatus.appendChild(note);
+    dom.checkoutStatus.appendChild(link);
+    dom.checkoutStatus.appendChild(document.createTextNode('.'));
+  }
+
   function renderSelect(){
     var frag = document.createDocumentFragment();
     models.forEach(function(model){
       var option = document.createElement('option');
-      option.value = model;
-      option.textContent = model;
+      option.value = model.id;
+      option.textContent = model.label;
       frag.appendChild(option);
     });
     dom.modelSelect.appendChild(frag);
+    dom.modelSelect.value = getActiveModel().id;
   }
 
   function renderQuality(){
@@ -337,34 +498,40 @@
     return selected ? selected.price : 0;
   }
 
-  function getAddonPrice(){
-    var total = 0;
-    Object.keys(state.addons).forEach(function(key){
-      if(state.addons[key]){
-        var option = addonOptions.find(function(add){ return add.id === key; });
-        if(option){ total += option.price; }
-      }
+  function getSelectedAddonDetails(){
+    return addonOptions.filter(function(option){
+      return !!state.addons[option.id];
+    }).map(function(option){
+      return { id: option.id, label: option.label, price: option.price };
     });
+  }
+
+  function getAddonPrice(){
+    var items = getSelectedAddonDetails();
+    var total = 0;
+    for(var i = 0; i < items.length; i++){
+      total += Number(items[i].price || 0);
+    }
     return total;
   }
 
   function buildAddonList(){
-    var names = [];
-    Object.keys(state.addons).forEach(function(key){
-      if(state.addons[key]){
-        var option = addonOptions.find(function(add){ return add.id === key; });
-        if(option){ names.push(option.label); }
-      }
-    });
-    return names;
+    return getSelectedAddonDetails().map(function(item){ return item.label; });
   }
 
-  function isOledAvailable(model){
-    return oledSurcharge[model] !== null && typeof oledSurcharge[model] !== 'undefined';
+  function isOledAvailableKey(modelKey){
+    if(typeof modelKey === 'undefined' || modelKey === null){
+      return false;
+    }
+    if(!Object.prototype.hasOwnProperty.call(oledSurcharge, modelKey)){
+      return false;
+    }
+    return oledSurcharge[modelKey] !== null;
   }
 
   function ensureQualityAvailability(){
-    var available = isOledAvailable(state.model);
+    var modelKey = getModelKey();
+    var available = isOledAvailableKey(modelKey);
     var oledInput = $('quality-oled');
     if(!available){
       oledInput.checked = false;
@@ -374,7 +541,7 @@
       $('oledPrice').textContent = '(N/A)';
     } else {
       oledInput.disabled = false;
-      $('oledPrice').textContent = '(+ ' + money(oledSurcharge[state.model]) + ')';
+      $('oledPrice').textContent = '(+ ' + money(oledSurcharge[modelKey]) + ')';
     }
     updateQualityActive();
   }
@@ -410,13 +577,15 @@
   }
 
   function basePrice(){
-    var better = baseBetter[state.model] || 0;
+    var modelKey = getModelKey();
+    var better = baseBetter[modelKey] || 0;
     return better + (tierDiff[state.tier] || 0);
   }
 
   function qualityPrice(){
     if(state.quality !== 'oled') return 0;
-    return oledSurcharge[state.model] || 0;
+    var modelKey = getModelKey();
+    return oledSurcharge[modelKey] || 0;
   }
 
   function computeTotals(){
@@ -429,7 +598,7 @@
   }
 
   function updateSummary(){
-    dom.summaryModel.textContent = state.model;
+    dom.summaryModel.textContent = getModelLabel();
     dom.summaryQuality.textContent = state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket';
     var priorityOption = priorityOptions.find(function(opt){ return opt.id === state.priority; });
     dom.summaryPriority.textContent = priorityOption ? priorityOption.label + (priorityOption.price ? ' — ' + money(priorityOption.price) : ' — Included') : 'Standard Queue';
@@ -440,7 +609,7 @@
     dom.priceQuality.textContent = money(totals.quality);
     dom.pricePriority.textContent = money(totals.priority);
     dom.priceAddons.textContent = money(totals.addons);
-    dom.priceTotal.textContent = 'Total: ' + money(totals.total);
+    dom.priceTotal.textContent = money(totals.total);
     if(dom.floatingTotalAmount){
       dom.floatingTotalAmount.textContent = money(totals.total);
     }
@@ -453,7 +622,7 @@
     state.quality = 'aftermarket';
     state.priority = 'standard';
     state.addons = {};
-    dom.modelSelect.value = state.model;
+    dom.modelSelect.value = getActiveModel().id;
     ensureQualityAvailability();
     syncTabActive();
     updatePriorityActive();
@@ -476,7 +645,7 @@
     });
 
     dom.modelSelect.addEventListener('change', function(){
-      state.model = this.value;
+      state.model = getModelById(this.value);
       ensureQualityAvailability();
       updateSummary();
     });
@@ -587,17 +756,36 @@
 
   function buildPayload(mode){
     var totals = computeTotals();
+    var model = getActiveModel();
+    var modelKey = getModelKey();
+    var addonDetails = getSelectedAddonDetails();
+    var priorityOption = priorityOptions.find(function(opt){ return opt.id === state.priority; });
     var configuration = {
       product_id: PRODUCT_ID,
-      model: state.model,
+      model: modelKey,
+      model_label: getModelLabel(),
+      model_value: model ? model.id : null,
       tier: state.tier,
+      tier_label: tierCopy[state.tier].title,
+      tier_note: tierCopy[state.tier].note,
       quality: state.quality,
+      quality_label: state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket',
       priority: state.priority,
-      addons: buildAddonList(),
+      priority_label: priorityOption ? priorityOption.label : 'Standard Queue',
+      priority_price: priorityOption ? priorityOption.price : 0,
+      addons: addonDetails.map(function(item){ return item.label; }),
+      addons_detail: addonDetails,
       pricing: totals,
       timestamp: new Date().toISOString(),
       checkout_mode: mode || 'checkout'
     };
+    var family = getModelFamily();
+    if(family){
+      configuration.model_family = family;
+    }
+    if(model && model.payload){
+      configuration.model_payload = model.payload;
+    }
     return {
       product_id: PRODUCT_ID,
       quantity: 1,
@@ -644,6 +832,7 @@
       console.error('Checkout error', error);
       var message = error && error.message ? error.message : 'Checkout request failed. Please try again.';
       showStatus(message, 'error');
+      offerManualCheckout(payloadJson, mode, message);
     }).finally(function(){
       setLoading(false);
     });
@@ -664,7 +853,9 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Cache-Control': 'no-cache'
         },
         credentials: 'include',
         body: payloadJson
@@ -680,10 +871,32 @@
             throw error;
           });
         }
-        return response.json().catch(function(){
-          var parseError = new Error('Unable to read checkout response.');
-          parseError.endpoint = endpoint;
-          throw parseError;
+        var contentType = response.headers && typeof response.headers.get === 'function' ? (response.headers.get('content-type') || '') : '';
+        if(contentType.indexOf('application/json') !== -1){
+          return response.json().catch(function(){
+            var parseError = new Error('Unable to read checkout response.');
+            parseError.endpoint = endpoint;
+            throw parseError;
+          });
+        }
+        return response.text().then(function(text){
+          var trimmedText = (text || '').trim();
+          if(!trimmedText){
+            var emptyError = new Error('Empty checkout response.');
+            emptyError.endpoint = endpoint;
+            throw emptyError;
+          }
+          if(/^https?:/i.test(trimmedText)){
+            return { checkout_url: trimmedText, _raw: trimmedText };
+          }
+          try {
+            return JSON.parse(trimmedText);
+          } catch(parseErr){
+            var parseError = new Error('Unable to read checkout response.');
+            parseError.endpoint = endpoint;
+            parseError.raw = trimmedText;
+            throw parseError;
+          }
         });
       }).then(function(result){
         if(result){
