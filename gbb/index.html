@@ -369,12 +369,16 @@
     var encodedPayload = encodePayloadForUrl(payloadJson);
     if(encodedPayload){
       url += '&gbb_payload=' + encodedPayload;
+      url += '&npc_gbb_payload=' + encodedPayload;
+    }
+    if(payloadJson){
+      url += '&payload=' + encodeURIComponent(payloadJson);
     }
     if(payload){
       var totals = payload.totals || payload.pricing || {};
       var basePrice = Number(totals.base || payload.base_price || 0);
       var qualityPrice = Number(totals.quality || payload.quality_price || 0);
-      var priorityPrice = Number(totals.priority || payload.priority_price || 0);
+      var priorityPrice = Number(totals.priority || payload.priority_price || payload.priority_amount || 0);
       var addonsPrice = Number(totals.addons || payload.addons_total || 0);
       var totalPrice = Number(totals.total || payload.total_price || payload.total || 0);
       if(!isFinite(basePrice)) basePrice = 0;
@@ -387,17 +391,41 @@
       var centsQuality = toCents(qualityPrice);
       var centsPriority = toCents(priorityPrice);
       var centsAddons = toCents(addonsPrice);
+      var totalFormatted = typeof payload.total_formatted === 'string' ? payload.total_formatted : money(totalPrice);
+      var prioritySelection = payload.priority_selection || (payload.configuration && payload.configuration.priority_selection) || payload.priority || '';
+      var priorityLabel = payload.priority_label || (payload.configuration && payload.configuration.priority_label) || '';
+      var modelLabel = payload.model_label || (payload.configuration && payload.configuration.model_label) || '';
+      var modelKey = payload.model || (payload.configuration && payload.configuration.model) || '';
+      var tierKey = payload.tier || (payload.configuration && payload.configuration.tier) || '';
+      var qualityKey = payload.quality || (payload.configuration && payload.configuration.quality) || '';
+      url += '&gbb_model=' + encodeURIComponent(modelKey);
+      url += '&gbb_model_label=' + encodeURIComponent(modelLabel);
+      url += '&gbb_tier=' + encodeURIComponent(tierKey);
+      url += '&gbb_quality=' + encodeURIComponent(qualityKey);
+      if(prioritySelection){
+        url += '&gbb_priority_selection=' + encodeURIComponent(prioritySelection);
+      }
+      if(priorityLabel){
+        url += '&gbb_priority_label=' + encodeURIComponent(priorityLabel);
+      }
       url += '&gbb_total=' + encodeURIComponent(totalPrice.toFixed(2));
       url += '&gbb_total_cents=' + encodeURIComponent(centsTotal);
+      url += '&gbb_total_display=' + encodeURIComponent(totalFormatted);
       url += '&gbb_base=' + encodeURIComponent(basePrice.toFixed(2));
       url += '&gbb_quality=' + encodeURIComponent(qualityPrice.toFixed(2));
+      url += '&gbb_priority_amount=' + encodeURIComponent(priorityPrice.toFixed(2));
       url += '&gbb_priority=' + encodeURIComponent(priorityPrice.toFixed(2));
       url += '&gbb_addons=' + encodeURIComponent(addonsPrice.toFixed(2));
+      url += '&gbb_addons_total=' + encodeURIComponent(addonsPrice.toFixed(2));
+      if(payload.addons && payload.addons.length){
+        url += '&gbb_addons_selected=' + encodeURIComponent(payload.addons.join(', '));
+      }
       url += '&gbb_breakdown_cents=' + encodeURIComponent(JSON.stringify({ base: centsBase, quality: centsQuality, priority: centsPriority, addons: centsAddons, total: centsTotal }));
     }
     if(mode && mode !== 'checkout'){
       url += '&checkout_mode=' + encodeURIComponent(mode);
     }
+    url += '&gbb_mode=' + encodeURIComponent(mode || 'checkout');
     return url;
   }
 
@@ -897,9 +925,11 @@
     var addonLabels = addonDetails.map(function(item){ return item.label; });
     var addonIds = addonDetails.map(function(item){ return item.id; });
     var priorityOption = priorityOptions.find(function(opt){ return opt.id === state.priority; });
+    var priorityKey = priorityOption ? priorityOption.id : state.priority;
     var priorityAmount = priorityOption ? priorityOption.price : 0;
-    var priorityKey = state.priority;
+    var priorityLabel = priorityOption ? priorityOption.label : 'Standard Queue';
     var modelValue = model ? (model.payload || model.id) : null;
+    var modelId = model ? model.id : null;
     var totalsCents = {
       base: toCents(totals.base),
       quality: toCents(totals.quality),
@@ -913,22 +943,25 @@
       label: 'Screen repair (' + getModelLabel() + ')',
       tier: state.tier,
       amount: totals.base,
-      amount_cents: totalsCents.base
+      amount_cents: totalsCents.base,
+      amount_formatted: money(totals.base)
     });
     if(state.quality === 'oled' && totals.quality){
       lineItems.push({
         key: 'quality',
         label: 'OLED upgrade',
         amount: totals.quality,
-        amount_cents: totalsCents.quality
+        amount_cents: totalsCents.quality,
+        amount_formatted: money(totals.quality)
       });
     }
     if(priorityAmount){
       lineItems.push({
         key: 'priority',
-        label: priorityOption ? priorityOption.label : 'Priority service',
+        label: priorityLabel || 'Priority service',
         amount: totals.priority,
-        amount_cents: totalsCents.priority
+        amount_cents: totalsCents.priority,
+        amount_formatted: money(totals.priority)
       });
     }
     if(addonDetails.length){
@@ -937,43 +970,61 @@
           key: 'addon_' + item.id,
           label: item.label,
           amount: Number(item.price || 0),
-          amount_cents: toCents(item.price)
+          amount_cents: toCents(item.price),
+          amount_formatted: money(item.price)
         });
       });
     }
     var configuration = {
       product_id: PRODUCT_ID,
       model: modelKey,
+      model_key: modelId,
+      model_id: modelId,
       model_label: getModelLabel(),
+      model_display: getModelLabel(),
       model_value: modelValue,
-      model_id: model ? model.id : null,
+      model_selection: modelId,
       tier: state.tier,
+      tier_key: state.tier,
       tier_label: tierCopy[state.tier].title,
       tier_note: tierCopy[state.tier].note,
       quality: state.quality,
+      quality_option: state.quality,
       quality_label: state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket',
-      priority: priorityAmount,
-      priority_label: priorityOption ? priorityOption.label : 'Standard Queue',
+      quality_price: totals.quality,
+      quality_price_cents: totalsCents.quality,
+      quality_price_formatted: money(totals.quality || 0),
+      priority: priorityKey,
+      priority_id: priorityKey,
+      priority_key: priorityKey,
+      priority_label: priorityLabel,
       priority_price: priorityAmount,
       priority_amount: priorityAmount,
+      priority_value: priorityAmount,
+      priority_price_formatted: money(priorityAmount || 0),
       priority_selection: priorityKey,
+      priority_selection_label: priorityLabel,
       addons: addonLabels,
       addons_detail: addonDetails,
       addon_ids: addonIds,
       addons_total: totals.addons,
+      addons_total_cents: totalsCents.addons,
+      addons_total_formatted: money(totals.addons || 0),
       pricing: totals,
       pricing_cents: totalsCents,
       line_items: lineItems,
       totals: totals,
+      totals_cents: totalsCents,
       total: totals.total,
       total_price: totals.total,
       total_cents: totalsCents.total,
+      total_formatted: money(totals.total || 0),
       base_price: totals.base,
       base_price_cents: totalsCents.base,
-      quality_price: totals.quality,
-      quality_price_cents: totalsCents.quality,
+      base_price_formatted: money(totals.base || 0),
       priority_total: totals.priority,
       priority_total_cents: totalsCents.priority,
+      priority_total_formatted: money(totals.priority || 0),
       timestamp: new Date().toISOString(),
       checkout_mode: mode || 'checkout',
       mode: mode || 'checkout'
@@ -989,48 +1040,74 @@
       product_id: PRODUCT_ID,
       quantity: 1,
       model: modelKey,
+      model_key: modelId,
+      model_id: modelId,
       model_label: getModelLabel(),
+      model_display: getModelLabel(),
+      model_selection: modelId,
       tier: state.tier,
+      tier_key: state.tier,
       tier_label: tierCopy[state.tier].title,
       quality: state.quality,
+      quality_option: state.quality,
       quality_label: state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket',
-      priority: priorityAmount,
-      priority_label: priorityOption ? priorityOption.label : 'Standard Queue',
+      quality_price: totals.quality,
+      quality_price_cents: totalsCents.quality,
+      quality_price_formatted: money(totals.quality || 0),
+      priority: priorityKey,
+      priority_id: priorityKey,
+      priority_key: priorityKey,
+      priority_label: priorityLabel,
       priority_amount: priorityAmount,
+      priority_value: priorityAmount,
+      priority_price: priorityAmount,
+      priority_price_formatted: money(priorityAmount || 0),
       addons: addonLabels,
       addon_ids: addonIds,
       addons_detail: addonDetails,
       addons_total: totals.addons,
       addons_total_cents: totalsCents.addons,
+      addons_total_formatted: money(totals.addons || 0),
       totals: totals,
       totals_cents: totalsCents,
+      totals_formatted: {
+        base: money(totals.base || 0),
+        quality: money(totals.quality || 0),
+        priority: money(totals.priority || 0),
+        addons: money(totals.addons || 0),
+        total: money(totals.total || 0)
+      },
       pricing: totals,
       pricing_cents: totalsCents,
       total: totals.total,
       total_price: totals.total,
       total_cents: totalsCents.total,
+      total_formatted: money(totals.total || 0),
       subtotal: totals.total,
       subtotal_price: totals.total,
       subtotal_cents: totalsCents.total,
+      subtotal_formatted: money(totals.total || 0),
       base_price: totals.base,
       base_price_cents: totalsCents.base,
-      quality_price: totals.quality,
-      quality_price_cents: totalsCents.quality,
-      priority_price: totals.priority,
+      base_price_formatted: money(totals.base || 0),
       priority_total: totals.priority,
       priority_total_cents: totalsCents.priority,
+      priority_total_formatted: money(totals.priority || 0),
       configuration: configuration,
       cart: {
         items: lineItems,
         subtotal: totals.total,
         subtotal_cents: totalsCents.total,
+        subtotal_formatted: money(totals.total || 0),
         total: totals.total,
-        total_cents: totalsCents.total
+        total_cents: totalsCents.total,
+        total_formatted: money(totals.total || 0)
       },
       line_items: lineItems,
       checkout_mode: mode || 'checkout',
       mode: mode || 'checkout',
-      priority_selection: priorityKey
+      priority_selection: priorityKey,
+      priority_selection_label: priorityLabel
     };
   }
 
