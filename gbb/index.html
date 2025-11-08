@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>North Point Computers - Screen Repairs</title>
-<meta name="application-name" content="NPC Screen Repairz">
+<meta name="application-name" content="NPC Screen Repair Configurator">
 <meta property="og:title" content="North Point Computers - Screen Repairs">
 <meta name="twitter:title" content="North Point Computers - Screen Repairs">
 <style>
@@ -39,6 +38,7 @@
   .card .section { padding:16px 20px; border-top:1px solid var(--divider); }
   label.head { display:block; font-weight:600; margin-bottom:8px; font-size:15px; }
   select { width:100%; appearance:none; -webkit-appearance:none; border:1px solid var(--border); border-radius:11px; padding:12px 14px; font-size:15px; background:var(--card); color:var(--text); box-shadow:0 1px 0 rgba(17,17,17,.03); }
+  #modelSelect { font-size:22.5px; font-weight:600; }
   select:focus { outline:3px solid rgba(30,102,255,.25); border-color:var(--accent); }
   .hint { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4; }
   .tabs { display:flex; gap:10px; padding:0 20px 18px; flex-wrap:wrap; }
@@ -61,6 +61,7 @@
   .summary .section { display:flex; flex-direction:column; gap:12px; }
   .summary .line { display:flex; justify-content:space-between; font-size:14px; gap:12px; }
   .summary .line span:first-child { color:var(--muted); }
+  #summaryModel { font-size:21px; font-weight:700; }
   .summary .total { font-size:22px; font-weight:800; margin-top:4px; }
   .summary .note { background:var(--note-bg); border:1px solid var(--note-border); color:#5c4700; padding:10px 12px; border-radius:10px; font-size:12px; line-height:1.5; }
   .divider { height:1px; background:var(--divider); }
@@ -95,7 +96,6 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>North Point Computers - Screen Repairs</h1>
   <p class="intro">Choose the repair tier that fits you best, add any extras, then continue to secure checkout on Lowbies.com. Payments are processed by WooCommerce with PayPal or card.</p>
 
   <div class="grid">
