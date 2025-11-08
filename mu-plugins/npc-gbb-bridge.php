@@ -1,11 +1,17 @@
 <?php
 if ( ! defined('ABSPATH') ) exit;
 
-/** NPC GBB Bridge – price-as-product (no fee line) */
+/**
+ * NPC GBB Bridge – price-as-product (no fee line) + PayPal handoff
+ * Flow:
+ *   /?npc_gbb=1&model=14&tier=better&quality=aftermarket&priority=0&addons=&mode=paypal
+ *   -> compute totals, push to cart, and if mode=paypal create order and redirect to PayPal
+ */
 add_action('template_redirect', function () {
   if ( empty($_GET['npc_gbb']) || ! class_exists('WooCommerce') ) return;
 
   $PRODUCT_ID = 1179;
+  $mode = isset($_GET['mode']) ? sanitize_text_field($_GET['mode']) : 'checkout';
 
   // Inputs
   $model    = isset($_GET['model'])   ? sanitize_text_field($_GET['model'])   : '';
@@ -34,6 +40,7 @@ add_action('template_redirect', function () {
   );
   $ADDONS = array('batt'=>79,'clean'=>50,'port'=>89,'prot'=>10);
 
+  // Validate + compute
   if (!isset($BASE_BETTER[$model])) $model = '14';
   if (!in_array($tier, array('good','better','premium'), true)) $tier = 'better';
   if ($quality !== 'oled' || $OLED[$model] === null) $quality = 'aftermarket';
@@ -50,6 +57,7 @@ add_action('template_redirect', function () {
 
   $total = $base + $qprice + $prio + $addon_total;
 
+  // Ensure session/cart
   if ( is_null(WC()->session) ) { wc()->initialize_session(); }
   if ( is_null(WC()->cart) ) { wc_load_cart(); }
 
@@ -61,14 +69,55 @@ add_action('template_redirect', function () {
     'npc_gbb_addons'=>implode(',', $addon_names),'npc_gbb_base'=>$base,'npc_gbb_qprice'=>$qprice,'npc_gbb_addons_total'=>$addon_total
   ));
 
+  // Reset cart -> add the booking product with overridden price
   WC()->cart->empty_cart(true);
   $key = WC()->cart->add_to_cart($PRODUCT_ID, 1);
   if ($key) { WC()->cart->set_quantity($key, 1, false); }
-
   WC()->cart->calculate_totals();
   WC()->cart->set_session();
   WC()->cart->maybe_set_cart_cookies();
 
+  // If PayPal one-click was requested, create order and handoff to the active PayPal gateway
+  if ( $mode === 'paypal' ) {
+    // Create order from current cart
+    $order = wc_create_order();
+    foreach ( WC()->cart->get_cart() as $cart_item ) {
+      $order->add_product( $cart_item['data'], $cart_item['quantity'] );
+    }
+    $order->calculate_totals();
+
+    // Try common PayPal gateway IDs in order
+    $preferred = array(
+      'ppcp-gateway',          // WooCommerce PayPal Payments
+      'paypal',                // Legacy PayPal Standard
+      'paypal_express',        // Some express plugins
+      'wc_gateway_paypal'      // Edge cases
+    );
+    $gateways = WC()->payment_gateways()->payment_gateways();
+    $paypal_gateway = null;
+    foreach ($preferred as $id) {
+      if ( isset($gateways[$id]) && $gateways[$id]->is_available() ) {
+        $paypal_gateway = $gateways[$id];
+        break;
+      }
+    }
+
+    if ( $paypal_gateway ) {
+      $order->set_payment_method( $paypal_gateway );
+      $order->save();
+
+      // Ask gateway for redirect URL
+      $result = $paypal_gateway->process_payment( $order->get_id() );
+      if ( is_array($result) && !empty($result['redirect']) ) {
+        nocache_headers();
+        wp_safe_redirect( $result['redirect'] );
+        exit;
+      }
+    }
+    // If no PayPal gateway found or no redirect, fall through to normal checkout:
+  }
+
+  // Default: send them to Woo checkout
   nocache_headers();
   wp_safe_redirect( wc_get_checkout_url() );
   exit;
