@@ -4,6 +4,7 @@ on:
     branches: [ main ]
     paths: [ 'mu-plugins/npc-gbb-bridge.php' ]
   workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,7 +19,8 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: mu-plugins/
-          server-dir: /
+          server-dir: /public_html/wp-content/mu-plugins/   # ← fix
+          state-name: .ftp-state-mu.json
           exclude: |
             **
             !npc-gbb-bridge.php
