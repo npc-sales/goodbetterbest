@@ -75,6 +75,18 @@
   .addon-grid { display:grid; gap:10px; }
   @media (min-width:620px) { .addon-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
   .legal { font-size:11px; color:var(--muted); margin-top:16px; line-height:1.5; }
+  .floating-total { position:fixed; right:24px; bottom:24px; background:var(--accent); color:#fff; padding:16px 20px; border-radius:18px; box-shadow:0 18px 40px rgba(30,102,255,.3); display:flex; flex-direction:column; gap:4px; font-weight:600; z-index:1000; min-width:180px; }
+  .floating-total span.label { font-size:12px; letter-spacing:.08em; text-transform:uppercase; opacity:.8; }
+  .floating-total span.amount { font-size:20px; font-weight:800; }
+  @media (min-width:901px){
+    .floating-total { display:none; }
+  }
+  @media (max-width:900px){
+    body { padding-bottom:120px; }
+    .floating-total { left:16px; right:16px; bottom:16px; flex-direction:row; justify-content:space-between; align-items:center; border-radius:14px; }
+    .floating-total span.label { font-size:13px; letter-spacing:0; text-transform:none; opacity:.95; }
+    .floating-total span.amount { font-size:18px; }
+  }
 </style>
 </head>
 <body>
@@ -150,6 +162,10 @@
       </div>
       <p class="legal">Checkout opens in a new tab on Lowbies.com with product ID 1179 pre-loaded. Taxes are calculated during WooCommerce checkout.</p>
     </aside>
+  </div>
+  <div class="floating-total" id="floatingTotal" aria-live="polite">
+    <span class="label">Current total</span>
+    <span class="amount" id="floatingTotalAmount">$0.00</span>
   </div>
 </div>
 
@@ -410,6 +426,9 @@
     dom.pricePriority.textContent = money(totals.priority);
     dom.priceAddons.textContent = money(totals.addons);
     dom.priceTotal.textContent = 'Total: ' + money(totals.total);
+    if(dom.floatingTotalAmount){
+      dom.floatingTotalAmount.textContent = money(totals.total);
+    }
     dom.summaryWarranty.textContent = tierCopy[state.tier].note;
   }
 
@@ -577,6 +596,7 @@
       pricePriority: $('pricePriority'),
       priceAddons: $('priceAddons'),
       priceTotal: $('priceTotal'),
+      floatingTotalAmount: $('floatingTotalAmount'),
       summaryWarranty: $('summaryWarranty'),
       warrantyNote: $('warrantyNote'),
       checkoutBtn: $('checkoutBtn'),
