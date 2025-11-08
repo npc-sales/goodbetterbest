@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>North Point Computers - Screen Repairs</title>
-<meta name="application-name" content="NPC Screen Repair Configurator">
 <meta property="og:title" content="North Point Computers - Screen Repairs">
 <meta name="twitter:title" content="North Point Computers - Screen Repairs">
 <style>
@@ -68,9 +67,6 @@
   .btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:14px 18px; border-radius:12px; border:0; background:var(--accent); color:#fff; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
   .btn-primary:hover { transform:translateY(-1px); box-shadow:0 8px 22px rgba(30,102,255,.22); }
   .btn-primary[disabled] { opacity:.6; cursor:not-allowed; transform:none; box-shadow:none; }
-  .btn-paypal { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 18px; border-radius:12px; border:1px solid #003087; background:linear-gradient(135deg,#ffc439,#f7b600); color:#003087; font-size:15px; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; text-decoration:none; }
-  .btn-paypal:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,48,135,.18); }
-  .btn-paypal[disabled] { opacity:.7; cursor:not-allowed; transform:none; box-shadow:none; }
   .btn-secondary { background:transparent; border:0; color:var(--muted); font-size:13px; text-decoration:underline; cursor:pointer; }
   .status { font-size:13px; line-height:1.4; border-radius:10px; padding:10px 12px; }
   .status.error { background:#ffe5e9; color:var(--error); border:1px solid rgba(176,0,32,.3); }
@@ -83,7 +79,9 @@
   .floating-total .floating-checkout { width:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:6px; text-align:left; }
   .floating-total .floating-checkout span.label { font-size:13px; letter-spacing:.02em; text-transform:none; opacity:.95; }
   .floating-total .floating-checkout span.amount { font-size:20px; font-weight:800; margin-left:auto; }
-  .floating-total .floating-pay { width:100%; }
+  .floating-total .floating-pay { width:100%; border-radius:12px; border:1px solid var(--accent); background:#fff; color:var(--accent); font-weight:600; padding:12px 16px; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; text-align:center; }
+  .floating-total .floating-pay:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(30,102,255,.18); }
+  .floating-total .floating-pay[disabled] { opacity:.6; cursor:not-allowed; transform:none; box-shadow:none; }
   @media (min-width:901px){
     .floating-total { display:none; }
   }
@@ -160,9 +158,6 @@
         <div class="note" id="summaryWarranty"></div>
         <div class="cta-wrap">
           <button class="btn-primary" id="checkoutBtn" type="button">Continue to Pay on Lowbies.com</button>
-          <button class="btn-paypal" id="paypalBtn" type="button">
-            <span id="paypalBtnLabel">Pay with credit card or PayPal</span>
-          </button>
           <button class="btn-secondary" id="resetBtn" type="button">Reset choices</button>
           <div class="status hidden" id="checkoutStatus" role="status"></div>
         </div>
@@ -252,9 +247,8 @@
 
   var dom = {};
   var CTA_TEXT = 'Continue to Pay on Lowbies.com';
-  var CTA_PAYPAL_TEXT = 'Pay with credit card or PayPal';
+  var CTA_PAY_TEXT = 'Pay with credit card or PayPal';
   var CTA_LOADING_TEXT = 'Preparing checkout…';
-  var CTA_PAYPAL_LOADING_TEXT = 'Preparing PayPal…';
   var CTA_LOADING_ALT_TEXT = 'Preparing…';
 
   function $(id){ return document.getElementById(id); }
@@ -515,15 +509,12 @@
       showStatus('Selections reset.', 'success');
     });
 
-    dom.checkoutBtn.addEventListener('click', function(){ submitCheckout('checkout'); });
-    if(dom.paypalBtn){
-      dom.paypalBtn.addEventListener('click', function(){ submitCheckout('paypal'); });
-    }
+    dom.checkoutBtn.addEventListener('click', submitCheckout);
     if(dom.floatingCheckoutBtn){
-      dom.floatingCheckoutBtn.addEventListener('click', function(){ submitCheckout('checkout'); });
+      dom.floatingCheckoutBtn.addEventListener('click', submitCheckout);
     }
     if(dom.floatingPayBtn){
-      dom.floatingPayBtn.addEventListener('click', function(){ submitCheckout('paypal'); });
+      dom.floatingPayBtn.addEventListener('click', submitCheckout);
     }
   }
 
@@ -539,39 +530,23 @@
     dom.checkoutStatus.classList.remove('error','success');
   }
 
-  function setLoading(loading, mode){
+  function setLoading(loading){
     if(loading){
       dom.checkoutBtn.setAttribute('disabled','disabled');
-      dom.checkoutBtn.textContent = mode === 'paypal' ? CTA_LOADING_ALT_TEXT : CTA_LOADING_TEXT;
-      if(dom.paypalBtn){
-        dom.paypalBtn.setAttribute('disabled','disabled');
-        if(dom.paypalBtnLabel){
-          dom.paypalBtnLabel.textContent = mode === 'paypal' ? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT;
-        } else {
-          dom.paypalBtn.textContent = mode === 'paypal' ? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT;
-        }
-      }
+      dom.checkoutBtn.textContent = CTA_LOADING_TEXT;
       if(dom.floatingCheckoutBtn){
         dom.floatingCheckoutBtn.setAttribute('disabled','disabled');
       }
       if(dom.floatingCheckoutLabel){
-        dom.floatingCheckoutLabel.textContent = mode === 'paypal' ? CTA_LOADING_ALT_TEXT : CTA_LOADING_TEXT;
+        dom.floatingCheckoutLabel.textContent = CTA_LOADING_TEXT;
       }
       if(dom.floatingPayBtn){
         dom.floatingPayBtn.setAttribute('disabled','disabled');
-        dom.floatingPayBtn.textContent = mode === 'paypal' ? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT;
+        dom.floatingPayBtn.textContent = CTA_LOADING_ALT_TEXT;
       }
     } else {
       dom.checkoutBtn.removeAttribute('disabled');
       dom.checkoutBtn.textContent = CTA_TEXT;
-      if(dom.paypalBtn){
-        dom.paypalBtn.removeAttribute('disabled');
-        if(dom.paypalBtnLabel){
-          dom.paypalBtnLabel.textContent = CTA_PAYPAL_TEXT;
-        } else {
-          dom.paypalBtn.textContent = CTA_PAYPAL_TEXT;
-        }
-      }
       if(dom.floatingCheckoutBtn){
         dom.floatingCheckoutBtn.removeAttribute('disabled');
       }
@@ -580,12 +555,12 @@
       }
       if(dom.floatingPayBtn){
         dom.floatingPayBtn.removeAttribute('disabled');
-        dom.floatingPayBtn.textContent = CTA_PAYPAL_TEXT;
+        dom.floatingPayBtn.textContent = CTA_PAY_TEXT;
       }
     }
   }
 
-  function buildPayload(mode){
+  function buildPayload(){
     var totals = computeTotals();
     var configuration = {
       product_id: PRODUCT_ID,
@@ -595,22 +570,19 @@
       priority: state.priority,
       addons: buildAddonList(),
       pricing: totals,
-      timestamp: new Date().toISOString(),
-      checkout_mode: mode || 'checkout'
+      timestamp: new Date().toISOString()
     };
     return {
       product_id: PRODUCT_ID,
       quantity: 1,
-      configuration: configuration,
-      checkout_mode: mode || 'checkout'
+      configuration: configuration
     };
   }
 
-  function submitCheckout(mode){
-    mode = mode || 'checkout';
+  function submitCheckout(){
     clearStatus();
-    setLoading(true, mode);
-    var payload = buildPayload(mode);
+    setLoading(true);
+    var payload = buildPayload();
     window.gbbPayloadPreview = payload; // Helpful for support/debug via console
     fetch(CHECKOUT_ENDPOINT, {
       method: 'POST',
@@ -629,17 +601,8 @@
         var message = (result && result.message) ? result.message : 'Unable to start checkout. Please call or text us for help.';
         throw new Error(message);
       }
-      if(mode === 'paypal' && result.paypal_url){
-        showStatus('Opening PayPal checkout…', 'success');
-        var paypalWindow = window.open(result.paypal_url, '_blank');
-        if(paypalWindow){
-          paypalWindow.opener = null;
-        } else {
-          window.location.href = result.paypal_url;
-        }
-      } else if(result.checkout_url){
-        var successMessage = mode === 'paypal' ? 'Launching checkout on Lowbies.com…' : 'Redirecting you to secure checkout…';
-        showStatus(successMessage, 'success');
+      if(result.checkout_url){
+        showStatus('Redirecting you to secure checkout…', 'success');
         window.location.href = result.checkout_url;
       } else {
         throw new Error('Checkout link missing. Please contact support.');
@@ -672,8 +635,6 @@
       floatingCheckoutLabel: $('floatingCheckoutLabel'),
       floatingPayBtn: $('floatingPayBtn'),
       floatingTotalAmount: $('floatingTotalAmount'),
-      paypalBtn: $('paypalBtn'),
-      paypalBtnLabel: $('paypalBtnLabel'),
       summaryWarranty: $('summaryWarranty'),
       warrantyNote: $('warrantyNote'),
       checkoutBtn: $('checkoutBtn'),
