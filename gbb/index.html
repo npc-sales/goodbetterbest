@@ -182,7 +182,12 @@
 <script>
 (function(){
   var PRODUCT_ID = 1179;
-  var CHECKOUT_ENDPOINT = '/wp-json/npc-gbb/v1/checkout';
+  var CHECKOUT_ENDPOINTS = [
+    '/wp-json/npc-gbb/v1/checkout',
+    '/wp-json/npc-gbb-bridge/v1/checkout',
+    '/?rest_route=/npc-gbb/v1/checkout',
+    '/?rest_route=/npc-gbb-bridge/v1/checkout'
+  ];
   var models = [
     'iPhone 11','iPhone 12','iPhone 12 Pro','iPhone 12 Pro Max','iPhone 13 Mini','iPhone 13','iPhone 13 Pro','iPhone 13 Pro Max',
     'iPhone 14','iPhone 14 Plus','iPhone 14 Pro','iPhone 14 Pro Max','iPhone 15','iPhone 15 Plus','iPhone 15 Pro','iPhone 15 Pro Max',
@@ -606,23 +611,15 @@
     clearStatus();
     setLoading(true, mode);
     var payload = buildPayload(mode);
+    var payloadJson = JSON.stringify(payload);
     window.gbbPayloadPreview = payload; // Helpful for support/debug via console
-    fetch(CHECKOUT_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify(payload)
-    }).then(function(response){
-      if(!response.ok){
-        throw new Error('Checkout request failed. Please try again.');
+    sendCheckoutRequest(payloadJson).then(function(result){
+      if(!result){
+        throw new Error('Checkout response missing. Please try again.');
       }
-      return response.json();
-    }).then(function(result){
-      if(!result || !result.success){
-        var message = (result && result.message) ? result.message : 'Unable to start checkout. Please call or text us for help.';
-        throw new Error(message);
+      var endpointUsed = result._endpoint || '';
+      if(endpointUsed){
+        window.gbbLastCheckoutEndpoint = endpointUsed;
       }
       if(mode === 'paypal' && result.paypal_url){
         showStatus('Opening PayPal checkout…', 'success');
@@ -632,19 +629,90 @@
         } else {
           window.location.href = result.paypal_url;
         }
-      } else if(result.checkout_url){
+        return;
+      }
+      var redirectUrl = result.checkout_url || result.redirect || result.url;
+      if(redirectUrl){
         var successMessage = mode === 'paypal' ? 'Launching checkout on Lowbies.com…' : 'Redirecting you to secure checkout…';
         showStatus(successMessage, 'success');
-        window.location.href = result.checkout_url;
-      } else {
-        throw new Error('Checkout link missing. Please contact support.');
+        window.location.href = redirectUrl;
+        return;
       }
+      throw new Error('Checkout link missing. Please contact support.');
     }).catch(function(error){
+      window.gbbLastCheckoutError = error;
       console.error('Checkout error', error);
-      showStatus(error.message || 'Something went wrong. Please try again.', 'error');
+      var message = error && error.message ? error.message : 'Checkout request failed. Please try again.';
+      showStatus(message, 'error');
     }).finally(function(){
       setLoading(false);
     });
+  }
+
+  function sendCheckoutRequest(payloadJson){
+    var attempt = 0;
+    var lastError = null;
+    function tryEndpoint(){
+      if(attempt >= CHECKOUT_ENDPOINTS.length){
+        if(lastError){
+          throw lastError;
+        }
+        throw new Error('Checkout request failed. Please try again.');
+      }
+      var endpoint = CHECKOUT_ENDPOINTS[attempt++];
+      var options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: payloadJson
+      };
+      return fetch(endpoint, options).then(function(response){
+        if(!response.ok){
+          return response.text().then(function(text){
+            var trimmed = (text || '').trim();
+            var message = trimmed || ('Checkout request failed (' + response.status + ').');
+            var error = new Error(message);
+            error.status = response.status;
+            error.endpoint = endpoint;
+            throw error;
+          });
+        }
+        return response.json().catch(function(){
+          var parseError = new Error('Unable to read checkout response.');
+          parseError.endpoint = endpoint;
+          throw parseError;
+        });
+      }).then(function(result){
+        if(result){
+          var hasExplicitSuccess = typeof result.success !== 'undefined';
+          var successValue = hasExplicitSuccess ? Boolean(result.success) : true;
+          if(hasExplicitSuccess && !successValue){
+            var errorMessage = result.message || result.error || 'Unable to start checkout. Please call or text us for help.';
+            var error = new Error(errorMessage);
+            error.endpoint = endpoint;
+            throw error;
+          }
+        }
+        if(result){
+          result._endpoint = endpoint;
+        }
+        return result;
+      }).catch(function(error){
+        lastError = error;
+        if(window.console && window.console.warn){
+          window.console.warn('Checkout endpoint failed', endpoint, error);
+        }
+        return tryEndpoint();
+      });
+    }
+    try {
+      return tryEndpoint();
+    } catch(err){
+      return Promise.reject(err);
+    }
   }
 
   function cacheDom(){
