@@ -895,19 +895,15 @@
 
     var attempt = function(index){
       if(index >= endpoints.length){
-        var errorMessage = 'Checkout request failed. Please try again.';
-        showStatus(errorMessage, 'error');
-        var manualLink = offerManualCheckout(payloadJson, mode, errorMessage);
-        if(manualLink){
-          setTimeout(function(){
-            try {
-              window.location.href = manualLink;
-            } catch(err){
-              console.error('Manual checkout auto-open failed', err);
-            }
-          }, 300);
+        if(manualUrl){
+          redirectTo(manualUrl, mode, payloadJson);
+          setTimeout(function(){ setLoading(false); }, 1200);
+        } else {
+          var fallbackMessage = 'Unable to prepare checkout link. Please contact support.';
+          showStatus(fallbackMessage, 'error');
+          offerManualCheckout(payloadJson, mode, fallbackMessage);
+          setLoading(false);
         }
-        setLoading(false);
         return;
       }
 
