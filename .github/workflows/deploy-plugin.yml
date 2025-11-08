@@ -17,7 +17,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD_PLUGIN }}
           protocol: ftps
           port: 21
-          local-dir: mu-plugins
+          local-dir: mu-plugins/
           server-dir: /
           exclude: |
             **
