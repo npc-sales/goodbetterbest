@@ -291,6 +291,10 @@
     return '$' + amount.toFixed(2);
   }
 
+  function toCents(value){
+    return Math.round(Number(value || 0) * 100);
+  }
+
   function getModelById(id){
     for(var i = 0; i < models.length; i++){
       if(models[i].id === id){
@@ -356,7 +360,7 @@
     return base.replace(/\/$/, '');
   }
 
-  function buildManualCheckoutUrl(mode, payloadJson){
+  function buildManualCheckoutUrl(mode, payloadJson, payload){
     var normalizedBase = getSiteBase();
     if(!normalizedBase){
       return '';
@@ -365,6 +369,31 @@
     var encodedPayload = encodePayloadForUrl(payloadJson);
     if(encodedPayload){
       url += '&gbb_payload=' + encodedPayload;
+    }
+    if(payload){
+      var totals = payload.totals || payload.pricing || {};
+      var basePrice = Number(totals.base || payload.base_price || 0);
+      var qualityPrice = Number(totals.quality || payload.quality_price || 0);
+      var priorityPrice = Number(totals.priority || payload.priority_price || 0);
+      var addonsPrice = Number(totals.addons || payload.addons_total || 0);
+      var totalPrice = Number(totals.total || payload.total_price || payload.total || 0);
+      if(!isFinite(basePrice)) basePrice = 0;
+      if(!isFinite(qualityPrice)) qualityPrice = 0;
+      if(!isFinite(priorityPrice)) priorityPrice = 0;
+      if(!isFinite(addonsPrice)) addonsPrice = 0;
+      if(!isFinite(totalPrice)) totalPrice = basePrice + qualityPrice + priorityPrice + addonsPrice;
+      var centsTotal = toCents(totalPrice);
+      var centsBase = toCents(basePrice);
+      var centsQuality = toCents(qualityPrice);
+      var centsPriority = toCents(priorityPrice);
+      var centsAddons = toCents(addonsPrice);
+      url += '&gbb_total=' + encodeURIComponent(totalPrice.toFixed(2));
+      url += '&gbb_total_cents=' + encodeURIComponent(centsTotal);
+      url += '&gbb_base=' + encodeURIComponent(basePrice.toFixed(2));
+      url += '&gbb_quality=' + encodeURIComponent(qualityPrice.toFixed(2));
+      url += '&gbb_priority=' + encodeURIComponent(priorityPrice.toFixed(2));
+      url += '&gbb_addons=' + encodeURIComponent(addonsPrice.toFixed(2));
+      url += '&gbb_breakdown_cents=' + encodeURIComponent(JSON.stringify({ base: centsBase, quality: centsQuality, priority: centsPriority, addons: centsAddons, total: centsTotal }));
     }
     if(mode && mode !== 'checkout'){
       url += '&checkout_mode=' + encodeURIComponent(mode);
@@ -432,11 +461,11 @@
     return endpoints;
   }
 
-  function offerManualCheckout(payloadJson, mode, message){
+  function offerManualCheckout(payloadJson, mode, message, payload){
     if(!dom.checkoutStatus){
       return '';
     }
-    var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
+    var manualUrl = buildManualCheckoutUrl(mode, payloadJson, payload);
     if(!manualUrl){
       return '';
     }
@@ -507,7 +536,7 @@
     return '';
   }
 
-  function redirectTo(url, mode, payloadJson){
+  function redirectTo(url, mode, payloadJson, payload){
     if(!url){
       return false;
     }
@@ -523,7 +552,7 @@
       } catch(err){
         console.error('Checkout redirect failed', err);
         showStatus('We could not open checkout automatically. Please use the link below.', 'error');
-        offerManualCheckout(payloadJson, mode, statusCopy);
+        offerManualCheckout(payloadJson, mode, statusCopy, payload);
         setLoading(false);
       }
     }, 150);
@@ -871,6 +900,47 @@
     var priorityAmount = priorityOption ? priorityOption.price : 0;
     var priorityKey = state.priority;
     var modelValue = model ? (model.payload || model.id) : null;
+    var totalsCents = {
+      base: toCents(totals.base),
+      quality: toCents(totals.quality),
+      priority: toCents(totals.priority),
+      addons: toCents(totals.addons),
+      total: toCents(totals.total)
+    };
+    var lineItems = [];
+    lineItems.push({
+      key: 'base',
+      label: 'Screen repair (' + getModelLabel() + ')',
+      tier: state.tier,
+      amount: totals.base,
+      amount_cents: totalsCents.base
+    });
+    if(state.quality === 'oled' && totals.quality){
+      lineItems.push({
+        key: 'quality',
+        label: 'OLED upgrade',
+        amount: totals.quality,
+        amount_cents: totalsCents.quality
+      });
+    }
+    if(priorityAmount){
+      lineItems.push({
+        key: 'priority',
+        label: priorityOption ? priorityOption.label : 'Priority service',
+        amount: totals.priority,
+        amount_cents: totalsCents.priority
+      });
+    }
+    if(addonDetails.length){
+      addonDetails.forEach(function(item){
+        lineItems.push({
+          key: 'addon_' + item.id,
+          label: item.label,
+          amount: Number(item.price || 0),
+          amount_cents: toCents(item.price)
+        });
+      });
+    }
     var configuration = {
       product_id: PRODUCT_ID,
       model: modelKey,
@@ -889,14 +959,21 @@
       priority_selection: priorityKey,
       addons: addonLabels,
       addons_detail: addonDetails,
+      addon_ids: addonIds,
       addons_total: totals.addons,
       pricing: totals,
+      pricing_cents: totalsCents,
+      line_items: lineItems,
       totals: totals,
       total: totals.total,
       total_price: totals.total,
+      total_cents: totalsCents.total,
       base_price: totals.base,
+      base_price_cents: totalsCents.base,
       quality_price: totals.quality,
+      quality_price_cents: totalsCents.quality,
       priority_total: totals.priority,
+      priority_total_cents: totalsCents.priority,
       timestamp: new Date().toISOString(),
       checkout_mode: mode || 'checkout',
       mode: mode || 'checkout'
@@ -922,9 +999,35 @@
       priority_amount: priorityAmount,
       addons: addonLabels,
       addon_ids: addonIds,
+      addons_detail: addonDetails,
+      addons_total: totals.addons,
+      addons_total_cents: totalsCents.addons,
       totals: totals,
+      totals_cents: totalsCents,
+      pricing: totals,
+      pricing_cents: totalsCents,
       total: totals.total,
+      total_price: totals.total,
+      total_cents: totalsCents.total,
+      subtotal: totals.total,
+      subtotal_price: totals.total,
+      subtotal_cents: totalsCents.total,
+      base_price: totals.base,
+      base_price_cents: totalsCents.base,
+      quality_price: totals.quality,
+      quality_price_cents: totalsCents.quality,
+      priority_price: totals.priority,
+      priority_total: totals.priority,
+      priority_total_cents: totalsCents.priority,
       configuration: configuration,
+      cart: {
+        items: lineItems,
+        subtotal: totals.total,
+        subtotal_cents: totalsCents.total,
+        total: totals.total,
+        total_cents: totalsCents.total
+      },
+      line_items: lineItems,
       checkout_mode: mode || 'checkout',
       mode: mode || 'checkout',
       priority_selection: priorityKey
@@ -940,16 +1043,16 @@
     window.gbbPayloadPreview = payload; // Helpful for support/debug via console
 
     var endpoints = typeof fetch === 'function' ? getCheckoutEndpoints(mode) : [];
-    var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
+    var manualUrl = buildManualCheckoutUrl(mode, payloadJson, payload);
 
     if(!endpoints.length){
       if(manualUrl){
-        redirectTo(manualUrl, mode, payloadJson);
+        redirectTo(manualUrl, mode, payloadJson, payload);
         setTimeout(function(){ setLoading(false); }, 1200);
       } else {
         var fallbackMessage = 'Unable to prepare checkout link. Please contact support.';
         showStatus(fallbackMessage, 'error');
-        offerManualCheckout(payloadJson, mode, fallbackMessage);
+        offerManualCheckout(payloadJson, mode, fallbackMessage, payload);
         setLoading(false);
       }
       return;
@@ -961,12 +1064,12 @@
     var attempt = function(index){
       if(index >= endpoints.length){
         if(manualUrl){
-          redirectTo(manualUrl, mode, payloadJson);
+          redirectTo(manualUrl, mode, payloadJson, payload);
           setTimeout(function(){ setLoading(false); }, 1200);
         } else {
           var fallbackMessage = 'Unable to prepare checkout link. Please contact support.';
           showStatus(fallbackMessage, 'error');
-          offerManualCheckout(payloadJson, mode, fallbackMessage);
+          offerManualCheckout(payloadJson, mode, fallbackMessage, payload);
           setLoading(false);
         }
         return;
@@ -999,7 +1102,7 @@
       }).then(function(body){
         var redirectUrl = parseRedirect(body, getSiteBase());
         if(redirectUrl){
-          redirectTo(redirectUrl, mode, payloadJson);
+          redirectTo(redirectUrl, mode, payloadJson, payload);
           setTimeout(function(){ setLoading(false); }, 1200);
         } else {
           throw new Error('No redirect URL in response');
