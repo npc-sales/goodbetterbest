@@ -1,142 +1,236 @@
 <?php
-if ( ! defined('ABSPATH') ) exit;
+if (!defined('ABSPATH')) exit;
 
 /**
- * NPC GBB Bridge – price-as-product (no fee line) + PayPal handoff
- * Flow:
- *   /?npc_gbb=1&model=14&tier=better&quality=aftermarket&priority=0&addons=&mode=paypal
- *   -> compute totals, push to cart, and if mode=paypal create order and redirect to PayPal
+ * NPC GBB – Generic Bridge (data-driven)
+ * - Frontend calls:
+ *     /?npc_gbb=1&product_id=1179&profile=iphone
+ *       &model=14&tier=better&quality=aftermarket&priority=0
+ *       &addons=batt,clean
+ * - Bridge loads /wp-content/uploads/npc-gbb/{profile}.json
+ * - Recomputes total server-side from that pricebook
+ * - Overrides product price (qty=1), builds label from template, redirects to checkout
+ *
+ * Pricebook schema (flexible):
+ * {
+ *   "label_template": "Screen Repair — {model} ({tier_label}, {quality_label})",
+ *   "labels": {
+ *     "tiers": {"good":"Discount — No Warranty","better":"Standard — 33-Day Warranty","premium":"Premium — 183-Day Warranty"},
+ *     "qualities": {"aftermarket":"Premium Aftermarket","oled":"OEM-Match OLED"}
+ *   },
+ *   "base": { "14":149, "14 Pro":169, ... },                 // base price by model OR "base_number": 0
+ *   "tiers": { "good": -19, "better": 0, "premium": 20 },    // optional
+ *   "quality": {
+ *     "aftermarket": 0,
+ *     "oled": { "14":119, "14 Pro":249, ... }                // can be number or per-model map
+ *   },
+ *   "priority": { "standard": 0, "priority": 39, "priority_plus": 59, "priority_pro": 99 }, // optional
+ *   "addons": { "batt":79, "clean":50, "port":89, "prot":10 }                                 // optional
+ * }
  */
+
 add_action('template_redirect', function () {
-  if ( empty($_GET['npc_gbb']) || ! class_exists('WooCommerce') ) return;
+  if (empty($_GET['npc_gbb']) || !class_exists('WooCommerce')) return;
 
-  $PRODUCT_ID = 1179;
-  $mode = isset($_GET['mode']) ? sanitize_text_field($_GET['mode']) : 'checkout';
+  // ---- Inputs ----
+  $product_id = isset($_GET['product_id']) ? intval($_GET['product_id']) : 1179;
+  $profile    = isset($_GET['profile'])    ? sanitize_key($_GET['profile']) : 'iphone';
 
-  // Inputs
-  $model    = isset($_GET['model'])   ? sanitize_text_field($_GET['model'])   : '';
-  $tier     = isset($_GET['tier'])    ? sanitize_text_field($_GET['tier'])    : 'better';
-  $quality  = isset($_GET['quality']) ? sanitize_text_field($_GET['quality']) : 'aftermarket';
-  $priority = isset($_GET['priority'])? intval($_GET['priority'])             : 0;
-  $addons_s = isset($_GET['addons'])  ? sanitize_text_field($_GET['addons'])  : '';
-  $addons_a = array_filter(array_map('trim', explode(',', $addons_s)));
+  // Common selections (your frontends should send these names; add more as you like)
+  $model      = isset($_GET['model'])      ? sanitize_text_field($_GET['model'])      : '';
+  $tier       = isset($_GET['tier'])       ? sanitize_text_field($_GET['tier'])       : '';
+  $quality    = isset($_GET['quality'])    ? sanitize_text_field($_GET['quality'])    : '';
+  $priority   = isset($_GET['priority'])   ? sanitize_text_field($_GET['priority'])   : '';
+  $addons_str = isset($_GET['addons'])     ? sanitize_text_field($_GET['addons'])     : '';
+  $addons     = array_filter(array_map('trim', explode(',', $addons_str)));
 
-  // Pricing tables
-  $BASE_BETTER = array(
-    "6"=>99,"6 Plus"=>99,"6s"=>99,"6s Plus"=>99,"7"=>99,"7 Plus"=>99,"8"=>99,"8 Plus"=>99,"X"=>99,"XR"=>99,
-    "11"=>139,"12"=>139,"12 Pro"=>169,"12 Pro Max"=>209,
-    "13 Mini"=>149,"13"=>149,"13 Pro"=>169,"13 Pro Max"=>209,
-    "14"=>149,"14 Plus"=>149,"14 Pro"=>169,"14 Pro Max"=>209,
-    "15"=>149,"15 Plus"=>149,"15 Pro"=>169,"15 Pro Max"=>209,
-    "16"=>149,"16 Plus"=>149,"16 Pro"=>169,"16 Pro Max"=>209
-  );
-  $OLED = array(
-    "6"=>null,"6 Plus"=>null,"6s"=>null,"6s Plus"=>null,"7"=>null,"7 Plus"=>null,"8"=>null,"8 Plus"=>null,"X"=>null,"XR"=>null,"11"=>null,
-    "12"=>99,"12 Pro"=>99,"12 Pro Max"=>129,
-    "13 Mini"=>139,"13"=>109,"13 Pro"=>189,"13 Pro Max"=>219,
-    "14"=>119,"14 Plus"=>179,"14 Pro"=>249,"14 Pro Max"=>349,
-    "15"=>249,"15 Plus"=>209,"15 Pro"=>359,"15 Pro Max"=>439,
-    "16"=>299,"16 Plus"=>409,"16 Pro"=>449,"16 Pro Max"=>529
-  );
-  $ADDONS = array('batt'=>79,'clean'=>50,'port'=>89,'prot'=>10);
+  // You can accept arbitrary extra selections (cpu, gpu, ram, etc.) and sum them as addon ids
+  // Example: if your PC page sends &cpu=ryzen7&gpu=rtx4070, just merge them into $addons by convention.
+  foreach (['cpu','gpu','ram','ssd','psu','case','cooler','os'] as $k) {
+    if (!empty($_GET[$k])) $addons[] = sanitize_text_field($_GET[$k]);
+  }
 
-  // Validate + compute
-  if (!isset($BASE_BETTER[$model])) $model = '14';
-  if (!in_array($tier, array('good','better','premium'), true)) $tier = 'better';
-  if ($quality !== 'oled' || $OLED[$model] === null) $quality = 'aftermarket';
+  // ---- Load pricebook JSON for profile ----
+  $pricebook = npc_gbb_load_pricebook($profile);
+  if (!$pricebook) {
+    wp_die('Pricebook not found for profile: ' . esc_html($profile));
+  }
 
-  $base = (int)$BASE_BETTER[$model];
-  if ($tier === 'good')    $base -= 19;
-  if ($tier === 'premium') $base += 20;
+  // ---- Compute total from pricebook + selections ----
+  $calc = npc_gbb_compute_total($pricebook, [
+    'model'   => $model,
+    'tier'    => $tier,
+    'quality' => $quality,
+    'priority'=> $priority,
+    'addons'  => $addons,
+  ]);
 
-  $qprice = ($quality === 'oled') ? (int)$OLED[$model] : 0;
-  $prio   = max(0, min(99, (int)$priority));
+  // ---- Ensure session/cart ----
+  if (is_null(WC()->session)) { wc()->initialize_session(); }
+  if (is_null(WC()->cart))    { wc_load_cart(); }
 
-  $addon_total = 0; $addon_names = array();
-  foreach ($addons_a as $a) { if (isset($ADDONS[$a])) { $addon_total += $ADDONS[$a]; $addon_names[] = $a; } }
+  // ---- Build label from template ----
+  $label = npc_gbb_label_from_template($pricebook, [
+    'model'         => $model,
+    'tier'          => $tier,
+    'tier_label'    => npc_gbb_map_label($pricebook, 'tiers', $tier),
+    'quality'       => $quality,
+    'quality_label' => npc_gbb_map_label($pricebook, 'qualities', $quality),
+    'total'         => wc_price($calc['total']),
+  ]);
 
-  $total = $base + $qprice + $prio + $addon_total;
-
-  // Ensure session/cart
-  if ( is_null(WC()->session) ) { wc()->initialize_session(); }
-  if ( is_null(WC()->cart) ) { wc_load_cart(); }
-
-  $label = sprintf('Screen Repair — %s (%s, %s)', $model, ucfirst($tier), ($quality==='oled'?'OLED':'Premium Aftermarket'));
-  WC()->session->set('npc_gbb_total', $total);
+  // ---- Persist summary for order meta ----
+  WC()->session->set('npc_gbb_total', $calc['total']);
   WC()->session->set('npc_gbb_label', $label);
-  WC()->session->set('npc_gbb_meta', array(
-    'npc_gbb_model'=>$model,'npc_gbb_tier'=>$tier,'npc_gbb_quality'=>$quality,'npc_gbb_priority'=>$prio,
-    'npc_gbb_addons'=>implode(',', $addon_names),'npc_gbb_base'=>$base,'npc_gbb_qprice'=>$qprice,'npc_gbb_addons_total'=>$addon_total
-  ));
+  WC()->session->set('npc_gbb_meta', [
+    'npc_gbb_profile'   => $profile,
+    'npc_gbb_model'     => $model,
+    'npc_gbb_tier'      => $tier,
+    'npc_gbb_quality'   => $quality,
+    'npc_gbb_priority'  => $priority,
+    'npc_gbb_addons'    => implode(',', $addons),
+    'npc_gbb_breakdown' => wp_json_encode($calc, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE),
+  ]);
 
-  // Reset cart -> add the booking product with overridden price
+  // ---- Reset cart → add product (override price below), force qty=1 ----
   WC()->cart->empty_cart(true);
-  $key = WC()->cart->add_to_cart($PRODUCT_ID, 1);
+  $key = WC()->cart->add_to_cart($product_id, 1);
   if ($key) { WC()->cart->set_quantity($key, 1, false); }
+
   WC()->cart->calculate_totals();
   WC()->cart->set_session();
   WC()->cart->maybe_set_cart_cookies();
 
-  // If PayPal one-click was requested, create order and handoff to the active PayPal gateway
-  if ( $mode === 'paypal' ) {
-    // Create order from current cart
-    $order = wc_create_order();
-    foreach ( WC()->cart->get_cart() as $cart_item ) {
-      $order->add_product( $cart_item['data'], $cart_item['quantity'] );
-    }
-    $order->calculate_totals();
-
-    // Try common PayPal gateway IDs in order
-    $preferred = array(
-      'ppcp-gateway',          // WooCommerce PayPal Payments
-      'paypal',                // Legacy PayPal Standard
-      'paypal_express',        // Some express plugins
-      'wc_gateway_paypal'      // Edge cases
-    );
-    $gateways = WC()->payment_gateways()->payment_gateways();
-    $paypal_gateway = null;
-    foreach ($preferred as $id) {
-      if ( isset($gateways[$id]) && $gateways[$id]->is_available() ) {
-        $paypal_gateway = $gateways[$id];
-        break;
-      }
-    }
-
-    if ( $paypal_gateway ) {
-      $order->set_payment_method( $paypal_gateway );
-      $order->save();
-
-      // Ask gateway for redirect URL
-      $result = $paypal_gateway->process_payment( $order->get_id() );
-      if ( is_array($result) && !empty($result['redirect']) ) {
-        nocache_headers();
-        wp_safe_redirect( $result['redirect'] );
-        exit;
-      }
-    }
-    // If no PayPal gateway found or no redirect, fall through to normal checkout:
-  }
-
-  // Default: send them to Woo checkout
+  // ---- Redirect to checkout ----
   nocache_headers();
-  wp_safe_redirect( wc_get_checkout_url() );
+  wp_safe_redirect(wc_get_checkout_url());
   exit;
 });
 
-/** Override product price + force qty=1 for product 1179 */
+/** Load pricebook JSON from /wp-content/uploads/npc-gbb/{profile}.json */
+function npc_gbb_load_pricebook($profile) {
+  $uploads = wp_get_upload_dir();
+  $dir = trailingslashit($uploads['basedir']) . 'npc-gbb/';
+  $file = $dir . sanitize_file_name($profile) . '.json';
+  if (!file_exists($file)) return null;
+  $json = file_get_contents($file);
+  if (!$json) return null;
+  $data = json_decode($json, true);
+  return is_array($data) ? $data : null;
+}
+
+/** Compute total from pricebook + selections (generic) */
+function npc_gbb_compute_total($pb, $sel) {
+  $model   = (string)($sel['model'] ?? '');
+  $tier    = (string)($sel['tier'] ?? '');
+  $quality = (string)($sel['quality'] ?? '');
+  $prioKey = (string)($sel['priority'] ?? '');
+  $addons  = is_array($sel['addons'] ?? null) ? $sel['addons'] : [];
+
+  $sum = 0;
+  $break = [];
+
+  // base
+  if (isset($pb['base']) && is_array($pb['base'])) {
+    $b = isset($pb['base'][$model]) ? floatval($pb['base'][$model]) : 0;
+    $sum += $b; $break['base'] = $b;
+  } elseif (isset($pb['base_number'])) {
+    $b = floatval($pb['base_number']);
+    $sum += $b; $break['base'] = $b;
+  } else {
+    $break['base'] = 0;
+  }
+
+  // tier delta
+  if (!empty($tier) && !empty($pb['tiers']) && is_array($pb['tiers'])) {
+    $t = isset($pb['tiers'][$tier]) ? floatval($pb['tiers'][$tier]) : 0;
+    $sum += $t; $break['tier'] = $t;
+  } else { $break['tier'] = 0; }
+
+  // quality surcharge (number or per-model map)
+  $qprice = 0;
+  if (!empty($quality) && !empty($pb['quality']) && is_array($pb['quality'])) {
+    if (isset($pb['quality'][$quality])) {
+      $qVal = $pb['quality'][$quality];
+      if (is_array($qVal)) {
+        $qprice = isset($qVal[$model]) ? floatval($qVal[$model]) : 0;
+      } else {
+        $qprice = floatval($qVal);
+      }
+    }
+  }
+  $sum += $qprice; $break['quality'] = $qprice;
+
+  // priority (map by key OR numeric passed)
+  $pprice = 0;
+  if ($prioKey !== '') {
+    if (!empty($pb['priority']) && is_array($pb['priority']) && isset($pb['priority'][$prioKey])) {
+      $pprice = floatval($pb['priority'][$prioKey]);
+    } elseif (is_numeric($prioKey)) {
+      $pprice = floatval($prioKey); // allow raw numeric priority if page passed a number
+    }
+  }
+  $sum += $pprice; $break['priority'] = $pprice;
+
+  // addons sum
+  $aprice = 0;
+  if (!empty($addons) && !empty($pb['addons']) && is_array($pb['addons'])) {
+    foreach ($addons as $a) {
+      if (isset($pb['addons'][$a])) $aprice += floatval($pb['addons'][$a]);
+    }
+  }
+  $sum += $aprice; $break['addons'] = $aprice;
+
+  return ['total' => round($sum, 2), 'breakdown' => $break];
+}
+
+/** Label from template with fallback */
+function npc_gbb_label_from_template($pb, $ctx) {
+  $tpl = !empty($pb['label_template']) ? $pb['label_template'] : 'Configured Item — {model} ({tier_label}, {quality_label})';
+  $map = [
+    '{model}'         => (string)($ctx['model'] ?? ''),
+    '{tier}'          => (string)($ctx['tier'] ?? ''),
+    '{tier_label}'    => (string)($ctx['tier_label'] ?? ''),
+    '{quality}'       => (string)($ctx['quality'] ?? ''),
+    '{quality_label}' => (string)($ctx['quality_label'] ?? ''),
+    '{total}'         => (string)($ctx['total'] ?? ''),
+  ];
+  return strtr($tpl, $map);
+}
+
+/** Map a label from pricebook.labels */
+function npc_gbb_map_label($pb, $group, $key) {
+  if (empty($key) || empty($pb['labels'][$group]) || !is_array($pb['labels'][$group])) return $key;
+  return isset($pb['labels'][$group][$key]) ? $pb['labels'][$group][$key] : $key;
+}
+
+/** Override product line price + force qty=1 */
 add_action('woocommerce_before_calculate_totals', function($cart){
-  if ( is_admin() && ! defined('DOING_AJAX') ) return;
-  if ( empty(WC()->session) ) return;
+  if (is_admin() && !defined('DOING_AJAX')) return;
+  if (empty(WC()->session)) return;
 
   $override = WC()->session->get('npc_gbb_total');
   $label    = WC()->session->get('npc_gbb_label');
-  if ( ! $override ) return;
+  if (!$override) return;
 
   foreach ($cart->get_cart() as $cart_key => $item) {
-    if ((int)$item['product_id'] === 1179 && isset($item['data'])) {
-      $item['data']->set_price( (float)$override );
-      if ($label) $item['data']->set_name($label);
-      if ($item['quantity'] !== 1) WC()->cart->set_quantity($cart_key, 1, false);
-    }
+    if (!isset($item['data'])) continue;
+    // Always enforce our computed price and name on the single line item
+    $item['data']->set_price( (float)$override );
+    if ($label) $item['data']->set_name($label);
+    if ($item['quantity'] !== 1) WC()->cart->set_quantity($cart_key, 1, false);
   }
 }, 20);
+
+/** Copy session meta to order line items */
+add_action('woocommerce_checkout_create_order_line_item', function($item, $cart_item_key, $values, $order){
+  $meta = WC()->session ? WC()->session->get('npc_gbb_meta') : null;
+  if (!$meta || !is_array($meta)) return;
+  foreach ($meta as $k => $v) {
+    $item->add_meta_data(
+      ucfirst(str_replace(['_','npc_gbb '], [' ',''], str_replace('npc_gbb_', 'npc gbb ', $k))),
+      $v,
+      true
+    );
+  }
+}, 10, 4);
