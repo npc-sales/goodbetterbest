@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="application-name" content="NPC Screen Repair Configurator">
+<meta property="og:title" content="North Point Computers - Screen Repairs">
+<meta name="twitter:title" content="North Point Computers - Screen Repairs">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --border: #d8ddea;
+    --border-strong: #cfd3dc;
+    --accent: #1e66ff;
+    --accent-soft: rgba(30,102,255,.1);
+    --text: #11151c;
+    --muted: #5b6472;
+    --divider: #eef1f7;
+    --note-bg: #fff8e6;
+    --note-border: #ffe5a3;
+    --error: #b00020;
+    --success: #0f9d58;
+  }
+  * { box-sizing: border-box; }
+  html,body { margin:0; padding:0; font-family: "SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+  h1 { font-size:24px; margin:0 0 10px; }
+  h2 { font-size:18px; margin:0; }
+  h3 { font-size:18px; margin:0; }
+  p { margin:0; }
+  .wrap { max-width:1080px; margin:0 auto; padding:16px; }
+  .intro { margin-bottom:16px; color:var(--muted); font-size:14px; }
+  .grid { display:grid; gap:14px; grid-template-columns:1fr; }
+  @media (min-width: 900px) { .grid { grid-template-columns: 1.2fr .8fr; align-items:start; } }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 2px 8px rgba(17,17,17,.04); overflow:hidden; }
+  .card h2 { padding:18px 20px 0; }
+  .card .section { padding:16px 20px; border-top:1px solid var(--divider); }
+  label.head { display:block; font-weight:600; margin-bottom:8px; font-size:15px; }
+  select { width:100%; appearance:none; -webkit-appearance:none; border:1px solid var(--border); border-radius:11px; padding:12px 14px; font-size:15px; background:var(--card); color:var(--text); box-shadow:0 1px 0 rgba(17,17,17,.03); }
+  #modelSelect { font-size:22.5px; font-weight:600; }
+  select:focus { outline:3px solid rgba(30,102,255,.25); border-color:var(--accent); }
+  .hint { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4; }
+  .tabs { display:flex; gap:10px; padding:0 20px 18px; flex-wrap:wrap; }
+  .tab { flex:1 1 160px; text-align:center; padding:14px 12px; border:1px solid var(--border-strong); border-radius:12px; font-weight:600; cursor:pointer; transition: all .15s ease; background:var(--card); box-shadow:0 1px 2px rgba(17,17,17,.04); }
+  .tab small { display:block; font-size:12px; color:var(--muted); margin-top:6px; font-weight:500; }
+  .tab.active { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft) inset,0 6px 20px rgba(30,102,255,.12); }
+  .tab:not(.active):hover { border-color:var(--accent); }
+  .tier-indicator { margin:-8px 20px 16px; padding:12px 16px; background:#eaf3ff; border:1px solid #cfe2ff; border-radius:12px; display:flex; justify-content:space-between; gap:16px; align-items:center; font-size:14px; }
+  .tier-indicator strong { font-size:15px; }
+  .radio-list,.check-list { display:grid; gap:10px; }
+  .radio-item,.check-item { border:1px solid var(--border); border-radius:12px; padding:14px; display:flex; gap:14px; align-items:flex-start; cursor:pointer; transition:border .15s ease, box-shadow .15s ease; }
+  .radio-item input,.check-item input { margin-top:3px; }
+  .radio-item.active,.check-item input:checked + label .row { border-color:var(--accent); }
+  .radio-item.active { box-shadow:0 0 0 2px var(--accent-soft); border-color:var(--accent); }
+  .radio-item label,.check-item label { flex:1; cursor:pointer; }
+  .row { display:flex; justify-content:space-between; gap:10px; align-items:center; font-size:14px; }
+  .row strong { font-size:15px; }
+  .price-chip { font-weight:700; }
+  .summary { position:sticky; top:16px; }
+  .summary .section { display:flex; flex-direction:column; gap:12px; }
+  .summary .line { display:flex; justify-content:space-between; font-size:14px; gap:12px; }
+  .summary .line span:first-child { color:var(--muted); }
+  #summaryModel { font-size:21px; font-weight:700; }
+  .summary .total { font-size:22px; font-weight:800; margin-top:4px; }
+  .summary .note { background:var(--note-bg); border:1px solid var(--note-border); color:#5c4700; padding:10px 12px; border-radius:10px; font-size:12px; line-height:1.5; }
+  .divider { height:1px; background:var(--divider); }
+  .cta-wrap { display:flex; flex-direction:column; gap:8px; }
+  .btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:14px 18px; border-radius:12px; border:0; background:var(--accent); color:#fff; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 8px 22px rgba(30,102,255,.22); }
+  .btn-primary[disabled] { opacity:.6; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-paypal { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 18px; border-radius:12px; border:1px solid #003087; background:linear-gradient(135deg,#ffc439,#f7b600); color:#003087; font-size:15px; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; text-decoration:none; }
+  .btn-paypal:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,48,135,.18); }
+  .btn-paypal[disabled] { opacity:.7; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-secondary { background:transparent; border:0; color:var(--muted); font-size:13px; text-decoration:underline; cursor:pointer; }
+  .status { font-size:13px; line-height:1.4; border-radius:10px; padding:10px 12px; }
+  .status.error { background:#ffe5e9; color:var(--error); border:1px solid rgba(176,0,32,.3); }
+  .status.success { background:#e8f5ed; color:var(--success); border:1px solid rgba(15,157,88,.35); }
+  .status.hidden { display:none; }
+  .addon-grid { display:grid; gap:10px; }
+  @media (min-width:620px) { .addon-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  .legal { font-size:11px; color:var(--muted); margin-top:16px; line-height:1.5; }
+  .floating-total { position:fixed; right:24px; bottom:24px; background:var(--card); color:var(--text); padding:18px; border-radius:18px; box-shadow:0 18px 40px rgba(17,17,17,.15); border:1px solid var(--border); display:flex; flex-direction:column; gap:10px; z-index:1000; width:280px; max-width:calc(100vw - 48px); }
+  .floating-total .floating-checkout { width:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:6px; text-align:left; }
+  .floating-total .floating-checkout span.label { font-size:13px; letter-spacing:.02em; text-transform:none; opacity:.95; }
+  .floating-total .floating-checkout span.amount { font-size:20px; font-weight:800; margin-left:auto; }
+  .floating-total .floating-pay { width:100%; }
+  @media (min-width:901px){
+    .floating-total { display:none; }
+  }
+  @media (max-width:900px){
+    body { padding-bottom:200px; }
+    .floating-total { left:16px; right:16px; bottom:16px; width:auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="intro">Choose the repair tier that fits you best, add any extras, then continue to secure checkout on Lowbies.com. Payments are processed by WooCommerce with PayPal or card.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Configure your repair</h2>
+      <div class="tabs" role="tablist">
+        <div class="tab active" id="tab-better" role="tab" tabindex="0" aria-selected="true" aria-controls="panel-tier" data-tier="better">Standard<small>33-Day Warranty</small></div>
+        <div class="tab" id="tab-good" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-tier" data-tier="good">Discount<small>No Warranty</small></div>
+        <div class="tab" id="tab-premium" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-tier" data-tier="premium">Premium<small>183-Day Warranty</small></div>
+      </div>
+      <div class="tier-indicator" id="tierIndicator">
+        <div>
+          <strong id="tierIndicatorTitle">Standard — 33-Day Warranty</strong>
+          <div id="tierIndicatorCopy">Baseline option with balanced coverage and price.</div>
+        </div>
+        <div id="tierIndicatorMath">Discount −$19 · Premium +$20</div>
+      </div>
+
+      <div class="section" id="panel-tier">
+        <label for="modelSelect" class="head">iPhone model</label>
+        <select id="modelSelect"></select>
+        <div class="hint">Pricing covers all colors and storage options. Mini/Plus/Pro variants are listed where available.</div>
+      </div>
+
+      <div class="section">
+        <label class="head">Screen quality</label>
+        <div class="radio-list" id="qualityOptions"></div>
+        <div class="hint">Premium Aftermarket is our best value. OLED is the closest match to factory panels and only available on select devices.</div>
+      </div>
+
+      <div class="section">
+        <label class="head">Priority service</label>
+        <div class="radio-list" id="priorityOptions"></div>
+      </div>
+
+      <div class="section">
+        <label class="head">Add-ons</label>
+        <div class="addon-grid" id="addonOptions"></div>
+        <div class="hint">Add-ons are performed during the same appointment as your screen repair.</div>
+      </div>
+
+      <div class="section">
+        <div class="note" id="warrantyNote"></div>
+      </div>
+    </div>
+
+    <aside class="card summary" aria-live="polite">
+      <h3 style="padding:18px 20px 0;">Live summary</h3>
+      <div class="section">
+        <div class="line"><span>Model</span><span id="summaryModel">—</span></div>
+        <div class="line"><span>Tier &amp; warranty</span><span id="summaryTier">—</span></div>
+        <div class="line"><span>Screen quality</span><span id="summaryQuality">—</span></div>
+        <div class="line"><span>Priority</span><span id="summaryPriority">—</span></div>
+        <div class="line"><span>Add-ons</span><span id="summaryAddons">None</span></div>
+        <div class="divider"></div>
+        <div class="line"><span>Base</span><span id="priceBase">$0.00</span></div>
+        <div class="line"><span>Screen quality</span><span id="priceQuality">$0.00</span></div>
+        <div class="line"><span>Priority</span><span id="pricePriority">$0.00</span></div>
+        <div class="line"><span>Add-ons</span><span id="priceAddons">$0.00</span></div>
+        <div class="divider"></div>
+        <div class="total" id="priceTotal">$0.00</div>
+        <div class="note" id="summaryWarranty"></div>
+        <div class="cta-wrap">
+          <button class="btn-primary" id="checkoutBtn" type="button">Continue to Pay on Lowbies.com</button>
+          <button class="btn-paypal" id="paypalBtn" type="button">
+            <span id="paypalBtnLabel">Pay with credit card or PayPal</span>
+          </button>
+          <button class="btn-secondary" id="resetBtn" type="button">Reset choices</button>
+          <div class="status hidden" id="checkoutStatus" role="status"></div>
+        </div>
+      </div>
+      <p class="legal">Checkout opens in a new tab on Lowbies.com with product ID 1179 pre-loaded. Taxes are calculated during WooCommerce checkout.</p>
+    </aside>
+  </div>
+  <div class="floating-total" id="floatingTotal" aria-live="polite">
+    <button class="btn-primary floating-checkout" id="floatingCheckoutBtn" type="button">
+      <span class="label" id="floatingCheckoutLabel">Continue to Pay on Lowbies.com</span>
+      <span class="amount" id="floatingTotalAmount">$0.00</span>
+    </button>
+    <button class="floating-pay" id="floatingPayBtn" type="button">Pay with credit card or PayPal</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var PRODUCT_ID = 1179;
+  var locationOrigin = '';
+  if(typeof window !== 'undefined' && window.location){
+    if(window.location.origin){
+      locationOrigin = window.location.origin;
+    } else {
+      locationOrigin = window.location.protocol + '//' + window.location.host;
+    }
+  }
+  var locationProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'https:';
+  var locationHost = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '';
+  var models = [
+    { id: '11', label: 'iPhone 11' },
+    { id: '12', label: 'iPhone 12' },
+    { id: '12 Pro', label: 'iPhone 12 Pro' },
+    { id: '12 Pro Max', label: 'iPhone 12 Pro Max' },
+    { id: '13 Mini', label: 'iPhone 13 Mini' },
+    { id: '13', label: 'iPhone 13' },
+    { id: '13 Pro', label: 'iPhone 13 Pro' },
+    { id: '13 Pro Max', label: 'iPhone 13 Pro Max' },
+    { id: '14', label: 'iPhone 14' },
+    { id: '14 Plus', label: 'iPhone 14 Plus' },
+    { id: '14 Pro', label: 'iPhone 14 Pro' },
+    { id: '14 Pro Max', label: 'iPhone 14 Pro Max' },
+    { id: '15', label: 'iPhone 15' },
+    { id: '15 Plus', label: 'iPhone 15 Plus' },
+    { id: '15 Pro', label: 'iPhone 15 Pro' },
+    { id: '15 Pro Max', label: 'iPhone 15 Pro Max' },
+    { id: '16', label: 'iPhone 16' },
+    { id: '16 Plus', label: 'iPhone 16 Plus' },
+    { id: '16 Pro', label: 'iPhone 16 Pro' },
+    { id: '16 Pro Max', label: 'iPhone 16 Pro Max' },
+    {
+      id: 'legacy-6-xr',
+      label: 'iPhone 6 – XR (all models)',
+      payload: '6',
+      family: ['6','6 Plus','6s','6s Plus','7','7 Plus','8','8 Plus','X','XR']
+    }
+  ];
+  var baseBetter = {
+    '6':99,
+    '11':139,'12':139,'12 Pro':169,'12 Pro Max':209,
+    '13 Mini':149,'13':149,'13 Pro':169,'13 Pro Max':209,
+    '14':149,'14 Plus':149,'14 Pro':169,'14 Pro Max':209,
+    '15':149,'15 Plus':149,'15 Pro':169,'15 Pro Max':209,
+    '16':149,'16 Plus':149,'16 Pro':169,'16 Pro Max':209
+  };
+  var oledSurcharge = {
+    '6':null,
+    '11':null,
+    '12':99,'12 Pro':99,'12 Pro Max':129,
+    '13 Mini':139,'13':109,'13 Pro':189,'13 Pro Max':219,
+    '14':119,'14 Plus':179,'14 Pro':249,'14 Pro Max':349,
+    '15':249,'15 Plus':209,'15 Pro':359,'15 Pro Max':439,
+    '16':299,'16 Plus':409,'16 Pro':449,'16 Pro Max':529
+  };
+  var tierCopy = {
+    good: {
+      title: 'Discount — No Warranty',
+      copy: 'Best for budget-conscious repairs. Includes functionality testing only.',
+      note: 'No warranty coverage is included at the Discount tier.'
+    },
+    better: {
+      title: 'Standard — 33-Day Warranty',
+      copy: 'Balanced protection with a complimentary 33-day warranty.',
+      note: 'Includes 33-day warranty against defects in parts and labor.'
+    },
+    premium: {
+      title: 'Premium — 183-Day Warranty',
+      copy: 'Maximum peace of mind with our longest warranty coverage.',
+      note: 'Includes 183-day warranty with priority support for warranty claims.'
+    }
+  };
+  var priorityOptions = [
+    { id:'standard', label:'Standard Queue', price:0, description:'Completed in standard order after paid priority jobs. Typical turnaround 1–3 business days.' },
+    { id:'priority', label:'Priority', price:39, description:'Moves ahead of standard jobs. Ideal for same-day or next-morning pickup.' },
+    { id:'priority_plus', label:'Priority+', price:59, description:'Front-of-line service. Great for urgent, time-sensitive repairs.' },
+    { id:'priority_pro', label:'Priority Pro', price:99, description:'Drop everything level. Reserved for business-critical or emergency requests.' }
+  ];
+  var addonOptions = [
+    { id:'battery', label:'Battery Replacement', price:79, description:'Brand new battery installed alongside your screen repair.' },
+    { id:'cleaning', label:'Charge Port Cleaning', price:50, description:'Deep clean to restore charging and data port performance.' },
+    { id:'port', label:'Charge Port Replacement', price:89, description:'Full port swap including parts and labor.' },
+    { id:'protector', label:'Screen Protector Install', price:10, description:'Tempered glass protector installed after repair.' }
+  ];
+
+  var state = {
+    model: models[0] || null,
+    tier: 'better',
+    quality: 'aftermarket',
+    priority: 'standard',
+    addons: {}
+  };
+
+  var tierDiff = { good: -19, better: 0, premium: 20 };
+
+  var dom = {};
+  var CTA_TEXT = 'Continue to Pay on Lowbies.com';
+  var CTA_PAYPAL_TEXT = 'Pay with credit card or PayPal';
+  var CTA_LOADING_TEXT = 'Preparing checkout…';
+  var CTA_PAYPAL_LOADING_TEXT = 'Preparing PayPal…';
+  var CTA_LOADING_ALT_TEXT = 'Preparing…';
+
+  function $(id){ return document.getElementById(id); }
+
+  function money(value){
+    var amount = Math.round(Number(value || 0) * 100) / 100;
+    return '$' + amount.toFixed(2);
+  }
+
+  function getModelById(id){
+    for(var i = 0; i < models.length; i++){
+      if(models[i].id === id){
+        return models[i];
+      }
+    }
+    return models[0];
+  }
+
+  function getActiveModel(){
+    return state.model || models[0];
+  }
+
+  function getModelKey(){
+    var model = getActiveModel();
+    return model && (model.payload || model.id);
+  }
+
+  function getModelLabel(){
+    var model = getActiveModel();
+    return model && model.label ? model.label : '';
+  }
+
+  function getModelFamily(){
+    var model = getActiveModel();
+    if(model && Array.isArray(model.family)){
+      return model.family.slice();
+    }
+    return null;
+  }
+
+  function encodePayloadForUrl(payloadJson){
+    if(!payloadJson){
+      return '';
+    }
+    try {
+      if(typeof TextEncoder !== 'undefined'){
+        var encoder = new TextEncoder();
+        var bytes = encoder.encode(payloadJson);
+        var binary = '';
+        for(var i = 0; i < bytes.length; i++){
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return encodeURIComponent(btoa(binary));
+      }
+    } catch(err){}
+    try {
+      return encodeURIComponent(btoa(unescape(encodeURIComponent(payloadJson))));
+    } catch(err2){
+      try {
+        return encodeURIComponent(btoa(payloadJson));
+      } catch(err3){
+        return encodeURIComponent(payloadJson);
+      }
+    }
+  }
+
+  function buildManualCheckoutUrl(mode, payloadJson){
+    var base = locationOrigin || (locationProtocol + '//' + locationHost);
+    if(!base){
+      return '';
+    }
+    var normalizedBase = base.replace(/\/$/, '');
+    var url = normalizedBase + '/checkout/?add-to-cart=' + PRODUCT_ID;
+    var encodedPayload = encodePayloadForUrl(payloadJson);
+    if(encodedPayload){
+      url += '&gbb_payload=' + encodedPayload;
+    }
+    if(mode && mode !== 'checkout'){
+      url += '&checkout_mode=' + encodeURIComponent(mode);
+    }
+    return url;
+  }
+
+  function offerManualCheckout(payloadJson, mode, message){
+    if(!dom.checkoutStatus){
+      return '';
+    }
+    var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
+    if(!manualUrl){
+      return '';
+    }
+    dom.checkoutStatus.classList.remove('hidden', 'success');
+    dom.checkoutStatus.classList.add('error');
+    dom.checkoutStatus.textContent = '';
+    var note = document.createElement('span');
+    var prefix = message ? message + ' ' : 'We could not reach checkout automatically. ';
+    var modeCopy = mode === 'paypal' ? 'We\'re opening the secure Lowbies.com checkout instead.' : 'We\'re opening the secure checkout page for you now.';
+    note.textContent = prefix + modeCopy + ' ';
+    var link = document.createElement('a');
+    link.href = manualUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'Open checkout manually on Lowbies.com';
+    dom.checkoutStatus.appendChild(note);
+    dom.checkoutStatus.appendChild(link);
+    dom.checkoutStatus.appendChild(document.createTextNode('.'));
+    return manualUrl;
+  }
+
+  function renderSelect(){
+    var frag = document.createDocumentFragment();
+    models.forEach(function(model){
+      var option = document.createElement('option');
+      option.value = model.id;
+      option.textContent = model.label;
+      frag.appendChild(option);
+    });
+    dom.modelSelect.appendChild(frag);
+    dom.modelSelect.value = getActiveModel().id;
+  }
+
+  function renderQuality(){
+    var container = dom.qualityOptions;
+    container.innerHTML = '';
+    var aftermarket = document.createElement('div');
+    aftermarket.className = 'radio-item active';
+    aftermarket.innerHTML = '<input type="radio" name="quality" value="aftermarket" id="quality-aftermarket" checked>\n      <label for="quality-aftermarket">\n        <div class="row"><strong>Premium Aftermarket</strong><span class="price-chip">Included</span></div>\n        <div class="hint">Excellent color, brightness, and responsiveness for most customers.</div>\n      </label>';
+    container.appendChild(aftermarket);
+
+    var oled = document.createElement('div');
+    oled.className = 'radio-item';
+    oled.innerHTML = '<input type="radio" name="quality" value="oled" id="quality-oled">\n      <label for="quality-oled">\n        <div class="row"><strong>OEM-Match OLED</strong><span class="price-chip" id="oledPrice">(+ $0)</span></div>\n        <div class="hint">Factory-spec vividness and deep blacks. Availability depends on model.</div>\n      </label>';
+    container.appendChild(oled);
+  }
+
+  function renderPriority(){
+    var container = dom.priorityOptions;
+    container.innerHTML = '';
+    priorityOptions.forEach(function(option, idx){
+      var item = document.createElement('div');
+      item.className = 'radio-item' + (idx === 0 ? ' active' : '');
+      var inputId = 'priority-' + option.id;
+      item.innerHTML = '<input type="radio" name="priority" value="' + option.id + '" id="' + inputId + '"' + (idx === 0 ? ' checked' : '') + '>\n        <label for="' + inputId + '">\n          <div class="row"><strong>' + option.label + '</strong><span class="price-chip">' + (option.price ? money(option.price) : 'Included') + '</span></div>\n          <div class="hint">' + option.description + '</div>\n        </label>';
+      container.appendChild(item);
+    });
+  }
+
+  function renderAddons(){
+    var container = dom.addonOptions;
+    container.innerHTML = '';
+    addonOptions.forEach(function(option){
+      var wrapper = document.createElement('div');
+      wrapper.className = 'check-item';
+      var inputId = 'addon-' + option.id;
+      wrapper.innerHTML = '<input type="checkbox" id="' + inputId + '" value="' + option.id + '">\n        <label for="' + inputId + '">\n          <div class="row"><strong>' + option.label + '</strong><span class="price-chip">' + money(option.price) + '</span></div>\n          <div class="hint">' + option.description + '</div>\n        </label>';
+      container.appendChild(wrapper);
+    });
+  }
+
+  function syncTabActive(){
+    ['good','better','premium'].forEach(function(tier){
+      var tab = $('tab-' + tier);
+      if(!tab) return;
+      if(state.tier === tier){
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected','true');
+      } else {
+        tab.classList.remove('active');
+        tab.setAttribute('aria-selected','false');
+      }
+    });
+    var copy = tierCopy[state.tier];
+    $('tierIndicatorTitle').textContent = copy.title;
+    $('tierIndicatorCopy').textContent = copy.copy;
+    dom.warrantyNote.textContent = copy.note;
+    $('summaryTier').textContent = copy.title;
+  }
+
+  function getPriorityPrice(){
+    var selected = priorityOptions.find(function(opt){ return opt.id === state.priority; });
+    return selected ? selected.price : 0;
+  }
+
+  function getSelectedAddonDetails(){
+    return addonOptions.filter(function(option){
+      return !!state.addons[option.id];
+    }).map(function(option){
+      return { id: option.id, label: option.label, price: option.price };
+    });
+  }
+
+  function getAddonPrice(){
+    var items = getSelectedAddonDetails();
+    var total = 0;
+    for(var i = 0; i < items.length; i++){
+      total += Number(items[i].price || 0);
+    }
+    return total;
+  }
+
+  function buildAddonList(){
+    return getSelectedAddonDetails().map(function(item){ return item.label; });
+  }
+
+  function isOledAvailableKey(modelKey){
+    if(typeof modelKey === 'undefined' || modelKey === null){
+      return false;
+    }
+    if(!Object.prototype.hasOwnProperty.call(oledSurcharge, modelKey)){
+      return false;
+    }
+    return oledSurcharge[modelKey] !== null;
+  }
+
+  function ensureQualityAvailability(){
+    var modelKey = getModelKey();
+    var available = isOledAvailableKey(modelKey);
+    var oledInput = $('quality-oled');
+    if(!available){
+      oledInput.checked = false;
+      oledInput.disabled = true;
+      state.quality = 'aftermarket';
+      $('quality-aftermarket').checked = true;
+      $('oledPrice').textContent = '(N/A)';
+    } else {
+      oledInput.disabled = false;
+      $('oledPrice').textContent = '(+ ' + money(oledSurcharge[modelKey]) + ')';
+    }
+    updateQualityActive();
+  }
+
+  function updateQualityActive(){
+    var items = dom.qualityOptions.querySelectorAll('.radio-item');
+    items.forEach(function(item){ item.classList.remove('active'); });
+    var selector = state.quality === 'oled' ? 'quality-oled' : 'quality-aftermarket';
+    var selectedItem = dom.qualityOptions.querySelector('input#' + selector);
+    if(selectedItem){
+      selectedItem.parentElement.classList.add('active');
+    }
+  }
+
+  function updatePriorityActive(){
+    var inputs = dom.priorityOptions.querySelectorAll('input[name="priority"]');
+    inputs.forEach(function(input){
+      if(input.value === state.priority){
+        input.checked = true;
+        input.parentElement.classList.add('active');
+      } else {
+        input.parentElement.classList.remove('active');
+      }
+    });
+  }
+
+  function updateAddonActive(){
+    addonOptions.forEach(function(option){
+      var checkbox = $('addon-' + option.id);
+      if(!checkbox) return;
+      checkbox.checked = !!state.addons[option.id];
+    });
+  }
+
+  function basePrice(){
+    var modelKey = getModelKey();
+    var better = baseBetter[modelKey] || 0;
+    return better + (tierDiff[state.tier] || 0);
+  }
+
+  function qualityPrice(){
+    if(state.quality !== 'oled') return 0;
+    var modelKey = getModelKey();
+    return oledSurcharge[modelKey] || 0;
+  }
+
+  function computeTotals(){
+    var base = basePrice();
+    var quality = qualityPrice();
+    var priority = getPriorityPrice();
+    var addons = getAddonPrice();
+    var total = base + quality + priority + addons;
+    return { base: base, quality: quality, priority: priority, addons: addons, total: total };
+  }
+
+  function updateSummary(){
+    dom.summaryModel.textContent = getModelLabel();
+    dom.summaryQuality.textContent = state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket';
+    var priorityOption = priorityOptions.find(function(opt){ return opt.id === state.priority; });
+    dom.summaryPriority.textContent = priorityOption ? priorityOption.label + (priorityOption.price ? ' — ' + money(priorityOption.price) : ' — Included') : 'Standard Queue';
+    var addonList = buildAddonList();
+    dom.summaryAddons.textContent = addonList.length ? addonList.join(', ') : 'None';
+    var totals = computeTotals();
+    dom.priceBase.textContent = money(totals.base);
+    dom.priceQuality.textContent = money(totals.quality);
+    dom.pricePriority.textContent = money(totals.priority);
+    dom.priceAddons.textContent = money(totals.addons);
+    dom.priceTotal.textContent = money(totals.total);
+    if(dom.floatingTotalAmount){
+      dom.floatingTotalAmount.textContent = money(totals.total);
+    }
+    dom.summaryWarranty.textContent = tierCopy[state.tier].note;
+  }
+
+  function resetState(){
+    state.model = models[0];
+    state.tier = 'better';
+    state.quality = 'aftermarket';
+    state.priority = 'standard';
+    state.addons = {};
+    dom.modelSelect.value = getActiveModel().id;
+    ensureQualityAvailability();
+    syncTabActive();
+    updatePriorityActive();
+    updateAddonActive();
+    updateSummary();
+  }
+
+  function attachEvents(){
+    ['tab-good','tab-better','tab-premium'].forEach(function(tabId){
+      var tab = $(tabId);
+      if(!tab) return;
+      tab.addEventListener('click', function(){
+        state.tier = tab.dataset.tier;
+        syncTabActive();
+        updateSummary();
+      });
+      tab.addEventListener('keydown', function(evt){
+        if(evt.key === 'Enter' || evt.key === ' '){ evt.preventDefault(); tab.click(); }
+      });
+    });
+
+    dom.modelSelect.addEventListener('change', function(){
+      state.model = getModelById(this.value);
+      ensureQualityAvailability();
+      updateSummary();
+    });
+
+    dom.qualityOptions.addEventListener('change', function(evt){
+      if(evt.target && evt.target.name === 'quality'){
+        state.quality = evt.target.value;
+        updateQualityActive();
+        updateSummary();
+      }
+    });
+
+    dom.priorityOptions.addEventListener('change', function(evt){
+      if(evt.target && evt.target.name === 'priority'){
+        state.priority = evt.target.value;
+        updatePriorityActive();
+        updateSummary();
+      }
+    });
+
+    addonOptions.forEach(function(option){
+      var checkbox = $('addon-' + option.id);
+      if(!checkbox) return;
+      checkbox.addEventListener('change', function(){
+        if(this.checked){
+          state.addons[option.id] = true;
+        } else {
+          delete state.addons[option.id];
+        }
+        updateSummary();
+      });
+    });
+
+    dom.resetBtn.addEventListener('click', function(){
+      resetState();
+      showStatus('Selections reset.', 'success');
+    });
+
+    dom.checkoutBtn.addEventListener('click', function(){ submitCheckout('checkout'); });
+    if(dom.paypalBtn){
+      dom.paypalBtn.addEventListener('click', function(){ submitCheckout('paypal'); });
+    }
+    if(dom.floatingCheckoutBtn){
+      dom.floatingCheckoutBtn.addEventListener('click', function(){ submitCheckout('checkout'); });
+    }
+    if(dom.floatingPayBtn){
+      dom.floatingPayBtn.addEventListener('click', function(){ submitCheckout('paypal'); });
+    }
+  }
+
+  function showStatus(message, type){
+    dom.checkoutStatus.textContent = message;
+    dom.checkoutStatus.classList.remove('hidden','error','success');
+    dom.checkoutStatus.classList.add(type === 'error' ? 'error' : 'success');
+  }
+
+  function clearStatus(){
+    dom.checkoutStatus.classList.add('hidden');
+    dom.checkoutStatus.textContent = '';
+    dom.checkoutStatus.classList.remove('error','success');
+  }
+
+  function setLoading(loading, mode){
+    if(loading){
+      dom.checkoutBtn.setAttribute('disabled','disabled');
+      dom.checkoutBtn.textContent = mode === 'paypal' ? CTA_LOADING_ALT_TEXT : CTA_LOADING_TEXT;
+      if(dom.paypalBtn){
+        dom.paypalBtn.setAttribute('disabled','disabled');
+        if(dom.paypalBtnLabel){
+          dom.paypalBtnLabel.textContent = mode === 'paypal' ? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT;
+        } else {
+          dom.paypalBtn.textContent = mode === 'paypal' ? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT;
+        }
+      }
+      if(dom.floatingCheckoutBtn){
+        dom.floatingCheckoutBtn.setAttribute('disabled','disabled');
+      }
+      if(dom.floatingCheckoutLabel){
+        dom.floatingCheckoutLabel.textContent = mode === 'paypal' ? CTA_LOADING_ALT_TEXT : CTA_LOADING_TEXT;
+      }
+      if(dom.floatingPayBtn){
+        dom.floatingPayBtn.setAttribute('disabled','disabled');
+        dom.floatingPayBtn.textContent = mode === 'paypal' ? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT;
+      }
+    } else {
+      dom.checkoutBtn.removeAttribute('disabled');
+      dom.checkoutBtn.textContent = CTA_TEXT;
+      if(dom.paypalBtn){
+        dom.paypalBtn.removeAttribute('disabled');
+        if(dom.paypalBtnLabel){
+          dom.paypalBtnLabel.textContent = CTA_PAYPAL_TEXT;
+        } else {
+          dom.paypalBtn.textContent = CTA_PAYPAL_TEXT;
+        }
+      }
+      if(dom.floatingCheckoutBtn){
+        dom.floatingCheckoutBtn.removeAttribute('disabled');
+      }
+      if(dom.floatingCheckoutLabel){
+        dom.floatingCheckoutLabel.textContent = CTA_TEXT;
+      }
+      if(dom.floatingPayBtn){
+        dom.floatingPayBtn.removeAttribute('disabled');
+        dom.floatingPayBtn.textContent = CTA_PAYPAL_TEXT;
+      }
+    }
+  }
+
+  function buildPayload(mode){
+    var totals = computeTotals();
+    var model = getActiveModel();
+    var modelKey = getModelKey();
+    var addonDetails = getSelectedAddonDetails();
+    var priorityOption = priorityOptions.find(function(opt){ return opt.id === state.priority; });
+    var configuration = {
+      product_id: PRODUCT_ID,
+      model: modelKey,
+      model_label: getModelLabel(),
+      model_value: model ? model.id : null,
+      tier: state.tier,
+      tier_label: tierCopy[state.tier].title,
+      tier_note: tierCopy[state.tier].note,
+      quality: state.quality,
+      quality_label: state.quality === 'oled' ? 'OEM-Match OLED' : 'Premium Aftermarket',
+      priority: state.priority,
+      priority_label: priorityOption ? priorityOption.label : 'Standard Queue',
+      priority_price: priorityOption ? priorityOption.price : 0,
+      addons: addonDetails.map(function(item){ return item.label; }),
+      addons_detail: addonDetails,
+      pricing: totals,
+      timestamp: new Date().toISOString(),
+      checkout_mode: mode || 'checkout'
+    };
+    var family = getModelFamily();
+    if(family){
+      configuration.model_family = family;
+    }
+    if(model && model.payload){
+      configuration.model_payload = model.payload;
+    }
+    return {
+      product_id: PRODUCT_ID,
+      quantity: 1,
+      configuration: configuration,
+      checkout_mode: mode || 'checkout'
+    };
+  }
+
+  function submitCheckout(mode){
+    mode = mode || 'checkout';
+    clearStatus();
+    setLoading(true, mode);
+    var payload = buildPayload(mode);
+    var payloadJson = JSON.stringify(payload);
+    window.gbbPayloadPreview = payload; // Helpful for support/debug via console
+
+    var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
+    if(!manualUrl){
+      var fallbackMessage = 'Unable to prepare checkout link. Please contact support.';
+      showStatus(fallbackMessage, 'error');
+      offerManualCheckout(payloadJson, mode, fallbackMessage);
+      setLoading(false);
+      return;
+    }
+
+    var statusCopy = mode === 'paypal' ? 'Opening secure Lowbies.com checkout…' : 'Redirecting you to secure checkout…';
+    showStatus(statusCopy, 'success');
+
+    setTimeout(function(){
+      try {
+        window.location.href = manualUrl;
+      } catch(err){
+        console.error('Manual checkout redirect failed', err);
+        showStatus('We could not open checkout automatically. Please use the link below.', 'error');
+        offerManualCheckout(payloadJson, mode, statusCopy);
+        setLoading(false);
+      }
+    }, 150);
+
+    setTimeout(function(){
+      setLoading(false);
+    }, 1200);
+  }
+
+  function cacheDom(){
+    dom = {
+      modelSelect: $('modelSelect'),
+      qualityOptions: $('qualityOptions'),
+      priorityOptions: $('priorityOptions'),
+      addonOptions: $('addonOptions'),
+      summaryModel: $('summaryModel'),
+      summaryTier: $('summaryTier'),
+      summaryQuality: $('summaryQuality'),
+      summaryPriority: $('summaryPriority'),
+      summaryAddons: $('summaryAddons'),
+      priceBase: $('priceBase'),
+      priceQuality: $('priceQuality'),
+      pricePriority: $('pricePriority'),
+      priceAddons: $('priceAddons'),
+      priceTotal: $('priceTotal'),
+      floatingCheckoutBtn: $('floatingCheckoutBtn'),
+      floatingCheckoutLabel: $('floatingCheckoutLabel'),
+      floatingPayBtn: $('floatingPayBtn'),
+      floatingTotalAmount: $('floatingTotalAmount'),
+      paypalBtn: $('paypalBtn'),
+      paypalBtnLabel: $('paypalBtnLabel'),
+      summaryWarranty: $('summaryWarranty'),
+      warrantyNote: $('warrantyNote'),
+      checkoutBtn: $('checkoutBtn'),
+      checkoutStatus: $('checkoutStatus'),
+      resetBtn: $('resetBtn')
+    };
+  }
+
+  function init(){
+    cacheDom();
+    renderSelect();
+    renderQuality();
+    renderPriority();
+    renderAddons();
+    ensureQualityAvailability();
+    syncTabActive();
+    updatePriorityActive();
+    updateAddonActive();
+    updateSummary();
+    attachEvents();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
