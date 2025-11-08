@@ -7,103 +7,76 @@
 <meta property="og:title" content="North Point Computers - Screen Repairs">
 <meta name="twitter:title" content="North Point Computers - Screen Repairs">
 <style>
-  :root {
-    color-scheme: light;
-    --bg: #f6f7fb;
-    --card: #ffffff;
-    --border: #d8ddea;
-    --border-strong: #cfd3dc;
-    --accent: #1e66ff;
-    --accent-soft: rgba(30,102,255,.1);
-    --text: #11151c;
-    --muted: #5b6472;
-    --divider: #eef1f7;
-    --note-bg: #fff8e6;
-    --note-border: #ffe5a3;
-    --error: #b00020;
-    --success: #0f9d58;
-  }
-  * { box-sizing: border-box; }
-  html,body { margin:0; padding:0; font-family: "SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
-  h1 { font-size:24px; margin:0 0 10px; }
-  h2 { font-size:18px; margin:0; }
-  h3 { font-size:18px; margin:0; }
-  p { margin:0; }
-  .wrap { max-width:1080px; margin:0 auto; padding:16px; }
-  .intro { margin-bottom:16px; color:var(--muted); font-size:14px; }
-  .grid { display:grid; gap:14px; grid-template-columns:1fr; }
-  @media (min-width: 900px) { .grid { grid-template-columns: 1.2fr .8fr; align-items:start; } }
-  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:0 2px 8px rgba(17,17,17,.04); overflow:hidden; }
-  .card h2 { padding:18px 20px 0; }
-  .card .section { padding:16px 20px; border-top:1px solid var(--divider); }
-  label.head { display:block; font-weight:600; margin-bottom:8px; font-size:15px; }
-  select { width:100%; appearance:none; -webkit-appearance:none; border:1px solid var(--border); border-radius:11px; padding:12px 14px; font-size:15px; background:var(--card); color:var(--text); box-shadow:0 1px 0 rgba(17,17,17,.03); }
-  #modelSelect { font-size:22.5px; font-weight:600; }
-  select:focus { outline:3px solid rgba(30,102,255,.25); border-color:var(--accent); }
-  .hint { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4; }
-  .tabs { display:flex; gap:10px; padding:0 20px 18px; flex-wrap:wrap; }
-  .tab { flex:1 1 160px; text-align:center; padding:14px 12px; border:1px solid var(--border-strong); border-radius:12px; font-weight:600; cursor:pointer; transition: all .15s ease; background:var(--card); box-shadow:0 1px 2px rgba(17,17,17,.04); }
-  .tab small { display:block; font-size:12px; color:var(--muted); margin-top:6px; font-weight:500; }
-  .tab.active { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft) inset,0 6px 20px rgba(30,102,255,.12); }
-  .tab:not(.active):hover { border-color:var(--accent); }
-  .tier-indicator { margin:-8px 20px 16px; padding:12px 16px; background:#eaf3ff; border:1px solid #cfe2ff; border-radius:12px; display:flex; justify-content:space-between; gap:16px; align-items:center; font-size:14px; }
-  .tier-indicator strong { font-size:15px; }
-  .radio-list,.check-list { display:grid; gap:10px; }
-  .radio-item,.check-item { border:1px solid var(--border); border-radius:12px; padding:14px; display:flex; gap:14px; align-items:flex-start; cursor:pointer; transition:border .15s ease, box-shadow .15s ease; }
-  .radio-item input,.check-item input { margin-top:3px; }
-  .radio-item.active,.check-item input:checked + label .row { border-color:var(--accent); }
-  .radio-item.active { box-shadow:0 0 0 2px var(--accent-soft); border-color:var(--accent); }
-  .radio-item label,.check-item label { flex:1; cursor:pointer; }
-  .row { display:flex; justify-content:space-between; gap:10px; align-items:center; font-size:14px; }
-  .row strong { font-size:15px; }
-  .price-chip { font-weight:700; }
-  .summary { position:sticky; top:16px; }
-  .summary .section { display:flex; flex-direction:column; gap:12px; }
-  .summary .line { display:flex; justify-content:space-between; font-size:14px; gap:12px; }
-  .summary .line span:first-child { color:var(--muted); }
-  #summaryModel { font-size:21px; font-weight:700; }
-  .summary .total { font-size:22px; font-weight:800; margin-top:4px; }
-  .summary .note { background:var(--note-bg); border:1px solid var(--note-border); color:#5c4700; padding:10px 12px; border-radius:10px; font-size:12px; line-height:1.5; }
-  .divider { height:1px; background:var(--divider); }
-  .cta-wrap { display:flex; flex-direction:column; gap:8px; }
-  .btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:10px; padding:14px 18px; border-radius:12px; border:0; background:var(--accent); color:#fff; font-size:16px; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
-  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 8px 22px rgba(30,102,255,.22); }
-  .btn-primary[disabled] { opacity:.6; cursor:not-allowed; transform:none; box-shadow:none; }
-  .btn-paypal { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 18px; border-radius:12px; border:1px solid #003087; background:linear-gradient(135deg,#ffc439,#f7b600); color:#003087; font-size:15px; font-weight:700; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; text-decoration:none; }
-  .btn-paypal:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,48,135,.18); }
-  .btn-paypal[disabled] { opacity:.7; cursor:not-allowed; transform:none; box-shadow:none; }
-  .btn-secondary { background:transparent; border:0; color:var(--muted); font-size:13px; text-decoration:underline; cursor:pointer; }
-  .status { font-size:13px; line-height:1.4; border-radius:10px; padding:10px 12px; }
-  .status.error { background:#ffe5e9; color:var(--error); border:1px solid rgba(176,0,32,.3); }
-  .status.success { background:#e8f5ed; color:var(--success); border:1px solid rgba(15,157,88,.35); }
-  .status.hidden { display:none; }
-  .addon-grid { display:grid; gap:10px; }
-  @media (min-width:620px) { .addon-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-  .legal { font-size:11px; color:var(--muted); margin-top:16px; line-height:1.5; }
-  .floating-total { position:fixed; right:24px; bottom:24px; background:var(--card); color:var(--text); padding:18px; border-radius:18px; box-shadow:0 18px 40px rgba(17,17,17,.15); border:1px solid var(--border); display:flex; flex-direction:column; gap:10px; z-index:1000; width:280px; max-width:calc(100vw - 48px); }
-  .floating-total .floating-checkout { width:100%; display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:6px; text-align:left; }
-  .floating-total .floating-checkout span.label { font-size:13px; letter-spacing:.02em; text-transform:none; opacity:.95; }
-  .floating-total .floating-checkout span.amount { font-size:20px; font-weight:800; margin-left:auto; }
-  .floating-total .floating-pay { width:100%; }
-  @media (min-width:901px){ .floating-total { display:none; } }
-  @media (max-width:900px){ body { padding-bottom:200px; } .floating-total { left:16px; right:16px; bottom:16px; width:auto; } }
+  :root { color-scheme: light; --bg:#f6f7fb; --card:#fff; --border:#d8ddea; --border-strong:#cfd3dc; --accent:#1e66ff; --accent-soft:rgba(30,102,255,.1); --text:#11151c; --muted:#5b6472; --divider:#eef1f7; --note-bg:#fff8e6; --note-border:#ffe5a3; --error:#b00020; --success:#0f9d58; }
+  *{box-sizing:border-box} html,body{margin:0;padding:0;font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  h1{font-size:24px;margin:0 0 10px} h2{font-size:18px;margin:0} h3{font-size:18px;margin:0} p{margin:0}
+  .wrap{max-width:1080px;margin:0 auto;padding:16px}
+  .intro{margin-bottom:16px;color:var(--muted);font-size:14px}
+  .grid{display:grid;gap:14px;grid-template-columns:1fr} @media(min-width:900px){.grid{grid-template-columns:1.2fr .8fr;align-items:start}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 8px rgba(17,17,17,.04);overflow:hidden}
+  .card h2{padding:18px 20px 0} .card .section{padding:16px 20px;border-top:1px solid var(--divider)}
+  label.head{display:block;font-weight:600;margin-bottom:8px;font-size:15px}
+  select{width:100%;appearance:none;-webkit-appearance:none;border:1px solid var(--border);border-radius:11px;padding:12px 14px;font-size:15px;background:var(--card);color:var(--text);box-shadow:0 1px 0 rgba(17,17,17,.03)}
+  #modelSelect{font-size:22.5px;font-weight:600} select:focus{outline:3px solid rgba(30,102,255,.25);border-color:var(--accent)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .tabs{display:flex;gap:10px;padding:0 20px 18px;flex-wrap:wrap}
+  .tab{flex:1 1 160px;text-align:center;padding:14px 12px;border:1px solid var(--border-strong);border-radius:12px;font-weight:600;cursor:pointer;transition:all .15s ease;background:var(--card);box-shadow:0 1px 2px rgba(17,17,17,.04)}
+  .tab small{display:block;font-size:12px;color:var(--muted);margin-top:6px;font-weight:500}
+  .tab.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft) inset,0 6px 20px rgba(30,102,255,.12)}
+  .tab:not(.active):hover{border-color:var(--accent)}
+  .tier-indicator{margin:-8px 20px 16px;padding:12px 16px;background:#eaf3ff;border:1px solid #cfe2ff;border-radius:12px;display:flex;justify-content:space-between;gap:16px;align-items:center;font-size:14px}
+  .tier-indicator strong{font-size:15px}
+  .radio-list,.check-list{display:grid;gap:10px}
+  .radio-item,.check-item{border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:flex-start;cursor:pointer;transition:border .15s ease,box-shadow .15s ease}
+  .radio-item input,.check-item input{margin-top:3px}
+  .radio-item.active,.check-item input:checked+label .row{border-color:var(--accent)}
+  .radio-item.active{box-shadow:0 0 0 2px var(--accent-soft);border-color:var(--accent)}
+  .radio-item label,.check-item label{flex:1;cursor:pointer}
+  .row{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px}
+  .row strong{font-size:15px} .price-chip{font-weight:700}
+  .summary{position:sticky;top:16px} .summary .section{display:flex;flex-direction:column;gap:12px}
+  .summary .line{display:flex;justify-content:space-between;font-size:14px;gap:12px}
+  .summary .line span:first-child{color:var(--muted)} #summaryModel{font-size:21px;font-weight:700}
+  .summary .total{font-size:22px;font-weight:800;margin-top:4px}
+  .summary .note{background:var(--note-bg);border:1px solid var(--note-border);color:#5c4700;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+  .divider{height:1px;background:var(--divider)}
+  .cta-wrap{display:flex;flex-direction:column;gap:8px}
+  .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 18px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(30,102,255,.22)}
+  .btn-primary[disabled]{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-paypal{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:12px;border:1px solid #003087;background:linear-gradient(135deg,#ffc439,#f7b600);color:#003087;font-size:15px;font-weight:700;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;text-decoration:none}
+  .btn-paypal:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,48,135,.18)}
+  .btn-paypal[disabled]{opacity:.7;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-secondary{background:transparent;border:0;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer}
+  .status{font-size:13px;line-height:1.4;border-radius:10px;padding:10px 12px}
+  .status.error{background:#ffe5e9;color:var(--error);border:1px solid rgba(176,0,32,.3)}
+  .status.success{background:#e8f5ed;color:var(--success);border:1px solid rgba(15,157,88,.35)}
+  .status.hidden{display:none}
+  .addon-grid{display:grid;gap:10px} @media(min-width:620px){.addon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .floating-total{position:fixed;right:24px;bottom:24px;background:var(--card);color:var(--text);padding:18px;border-radius:18px;box-shadow:0 18px 40px rgba(17,17,17,.15);border:1px solid var(--border);display:flex;flex-direction:column;gap:10px;z-index:1000;width:280px;max-width:calc(100vw - 48px)}
+  .floating-total .floating-checkout{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left}
+  .floating-total .floating-checkout span.label{font-size:13px;letter-spacing:.02em}
+  .floating-total .floating-checkout span.amount{font-size:20px;font-weight:800;margin-left:auto}
+  .floating-total .floating-pay{width:100%}
+  @media(min-width:901px){.floating-total{display:none}}
+  @media(max-width:900px){body{padding-bottom:200px}.floating-total{left:16px;right:16px;bottom:16px;width:auto}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <p class="intro">Choose the repair tier that fits you best, add any extras, then continue to secure checkout on Lowbies.com. Payments are processed by WooCommerce with PayPal or card.</p>
+  <p class="intro">Choose the repair tier that fits you best, add any extras, then continue to secure checkout on Lowbies.com.</p>
 
   <div class="grid">
     <div class="card">
       <h2>Configure your repair</h2>
       <div class="tabs" role="tablist">
-        <div class="tab active" id="tab-better" role="tab" tabindex="0" aria-selected="true" aria-controls="panel-tier" data-tier="better">Standard<small>33 Day Warranty</small></div>
+        <div class="tab active" id="tab-better" role="tab" tabindex="0" aria-selected="true" aria-controls="panel-tier" data-tier="better">Standard<small>33-Day Warranty</small></div>
         <div class="tab" id="tab-good" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-tier" data-tier="good">Discount<small>No Warranty</small></div>
-        <div class="tab" id="tab-premium" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-tier" data-tier="premium">Premium<small>183 Day Warranty</small></div>
+        <div class="tab" id="tab-premium" role="tab" tabindex="0" aria-selected="false" aria-controls="panel-tier" data-tier="premium">Premium<small>183-Day Warranty</small></div>
       </div>
       <div class="tier-indicator" id="tierIndicator">
         <div>
-          <strong id="tierIndicatorTitle">Standard — 33 Day Warranty</strong>
+          <strong id="tierIndicatorTitle">Standard — 33-Day Warranty</strong>
           <div id="tierIndicatorCopy">Baseline option with balanced coverage and price.</div>
         </div>
         <div id="tierIndicatorMath">Discount −$19 · Premium +$20</div>
@@ -112,13 +85,13 @@
       <div class="section" id="panel-tier">
         <label for="modelSelect" class="head">iPhone model</label>
         <select id="modelSelect"></select>
-        <div class="hint">Pricing covers all colors and storage options. Mini, Plus, and Pro variants are listed where available.</div>
+        <div class="hint">Pricing covers all colors and storage options.</div>
       </div>
 
       <div class="section">
         <label class="head">Screen quality</label>
         <div class="radio-list" id="qualityOptions"></div>
-        <div class="hint">Premium Aftermarket is our best value. OLED is the closest match to factory panels and only available on select devices.</div>
+        <div class="hint">OEM-Match OLED is available on select devices.</div>
       </div>
 
       <div class="section">
@@ -129,7 +102,6 @@
       <div class="section">
         <label class="head">Add-ons</label>
         <div class="addon-grid" id="addonOptions"></div>
-        <div class="hint">Add-ons are performed during the same appointment as your screen repair.</div>
       </div>
 
       <div class="section">
@@ -155,16 +127,14 @@
         <div class="note" id="summaryWarranty"></div>
         <div class="cta-wrap">
           <button class="btn-primary" id="checkoutBtn" type="button">Continue to Pay on Lowbies.com</button>
-          <button class="btn-paypal" id="paypalBtn" type="button">
-            <span id="paypalBtnLabel">Pay with credit card or PayPal</span>
-          </button>
+          <button class="btn-paypal" id="paypalBtn" type="button"><span id="paypalBtnLabel">Pay with credit card or PayPal</span></button>
           <button class="btn-secondary" id="resetBtn" type="button">Reset choices</button>
           <div class="status hidden" id="checkoutStatus" role="status"></div>
         </div>
       </div>
-      <p class="legal">Checkout opens in a new tab on Lowbies.com with product ID 1179 preloaded. Taxes are calculated during WooCommerce checkout.</p>
     </aside>
   </div>
+
   <div class="floating-total" id="floatingTotal" aria-live="polite">
     <button class="btn-primary floating-checkout" id="floatingCheckoutBtn" type="button">
       <span class="label" id="floatingCheckoutLabel">Continue to Pay on Lowbies.com</span>
@@ -176,549 +146,222 @@
 
 <script>
 (function(){
-  // product id on lowbies
-  var PRODUCT_ID = 1179;
-
-  // direct paypal settings
-  var PAYPAL_BUSINESS_EMAIL = 'helcite@yahoo.com';
-  var PAYPAL_CURRENCY = 'USD';
-  var PAYPAL_RETURN_URL = 'https://lowbies.com/thank-you/?src=gbb';
-  var PAYPAL_CANCEL_URL = 'https://lowbies.com/gbb/';
-
-  var locationOrigin = '';
-  if(typeof window !== 'undefined' && window.location){
-    if(window.location.origin){
-      locationOrigin = window.location.origin;
-    } else {
-      locationOrigin = window.location.protocol + '//' + window.location.host;
-    }
-  }
-  var locationProtocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'https:';
-  var locationHost = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '';
-
+  // ——— Data (match your bridge arrays) ———
   var models = [
-    { id: '11', label: 'iPhone 11' },
-    { id: '12', label: 'iPhone 12' },
-    { id: '12 Pro', label: 'iPhone 12 Pro' },
-    { id: '12 Pro Max', label: 'iPhone 12 Pro Max' },
-    { id: '13 Mini', label: 'iPhone 13 Mini' },
-    { id: '13', label: 'iPhone 13' },
-    { id: '13 Pro', label: 'iPhone 13 Pro' },
-    { id: '13 Pro Max', label: 'iPhone 13 Pro Max' },
-    { id: '14', label: 'iPhone 14' },
-    { id: '14 Plus', label: 'iPhone 14 Plus' },
-    { id: '14 Pro', label: 'iPhone 14 Pro' },
-    { id: '14 Pro Max', label: 'iPhone 14 Pro Max' },
-    { id: '15', label: 'iPhone 15' },
-    { id: '15 Plus', label: 'iPhone 15 Plus' },
-    { id: '15 Pro', label: 'iPhone 15 Pro' },
-    { id: '15 Pro Max', label: 'iPhone 15 Pro Max' },
-    { id: '16', label: 'iPhone 16' },
-    { id: '16 Plus', label: 'iPhone 16 Plus' },
-    { id: '16 Pro', label: 'iPhone 16 Pro' },
-    { id: '16 Pro Max', label: 'iPhone 16 Pro Max' },
-    {
-      id: 'legacy-6-xr',
-      label: 'iPhone 6 to XR (all models)',
-      payload: '6',
-      family: ['6','6 Plus','6s','6s Plus','7','7 Plus','8','8 Plus','X','XR']
-    }
+    {id:'6',label:'iPhone 6'}, {id:'6 Plus',label:'iPhone 6 Plus'},
+    {id:'6s',label:'iPhone 6s'}, {id:'6s Plus',label:'iPhone 6s Plus'},
+    {id:'7',label:'iPhone 7'}, {id:'7 Plus',label:'iPhone 7 Plus'},
+    {id:'8',label:'iPhone 8'}, {id:'8 Plus',label:'iPhone 8 Plus'},
+    {id:'X',label:'iPhone X'}, {id:'XR',label:'iPhone XR'},
+    {id:'11',label:'iPhone 11'},
+    {id:'12',label:'iPhone 12'}, {id:'12 Pro',label:'iPhone 12 Pro'}, {id:'12 Pro Max',label:'iPhone 12 Pro Max'},
+    {id:'13 Mini',label:'iPhone 13 Mini'}, {id:'13',label:'iPhone 13'}, {id:'13 Pro',label:'iPhone 13 Pro'}, {id:'13 Pro Max',label:'iPhone 13 Pro Max'},
+    {id:'14',label:'iPhone 14'}, {id:'14 Plus',label:'iPhone 14 Plus'}, {id:'14 Pro',label:'iPhone 14 Pro'}, {id:'14 Pro Max',label:'iPhone 14 Pro Max'},
+    {id:'15',label:'iPhone 15'}, {id:'15 Plus',label:'iPhone 15 Plus'}, {id:'15 Pro',label:'iPhone 15 Pro'}, {id:'15 Pro Max',label:'iPhone 15 Pro Max'},
+    {id:'16',label:'iPhone 16'}, {id:'16 Plus',label:'iPhone 16 Plus'}, {id:'16 Pro',label:'iPhone 16 Pro'}, {id:'16 Pro Max',label:'iPhone 16 Pro Max'}
   ];
 
-  // base prices for Standard tier
-  var baseBetter = {
-    '6':99,
-    '11':139,'12':139,'12 Pro':169,'12 Pro Max':209,
-    '13 Mini':149,'13':149,'13 Pro':169,'13 Pro Max':209,
-    '14':149,'14 Plus':149,'14 Pro':169,'14 Pro Max':209,
-    '15':149,'15 Plus':149,'15 Pro':169,'15 Pro Max':209,
-    '16':149,'16 Plus':149,'16 Pro':169,'16 Pro Max':209
-  };
-  var oledSurcharge = {
-    '6':null,
-    '11':null,
-    '12':99,'12 Pro':99,'12 Pro Max':129,
-    '13 Mini':139,'13':109,'13 Pro':189,'13 Pro Max':219,
-    '14':119,'14 Plus':179,'14 Pro':249,'14 Pro Max':349,
-    '15':249,'15 Plus':209,'15 Pro':359,'15 Pro Max':439,
-    '16':299,'16 Plus':409,'16 Pro':449,'16 Pro Max':529
-  };
+  var baseBetter = {"6":99,"6 Plus":99,"6s":99,"6s Plus":99,"7":99,"7 Plus":99,"8":99,"8 Plus":99,"X":99,"XR":99,
+    "11":139,"12":139,"12 Pro":169,"12 Pro Max":209,"13 Mini":149,"13":149,"13 Pro":169,"13 Pro Max":209,
+    "14":149,"14 Plus":149,"14 Pro":169,"14 Pro Max":209,"15":149,"15 Plus":149,"15 Pro":169,"15 Pro Max":209,
+    "16":149,"16 Plus":149,"16 Pro":169,"16 Pro Max":209};
 
-  var tierCopy = {
-    good:    { title: 'Discount — No Warranty',          copy: 'Best for budget conscious repairs. Includes functionality testing only.', note: 'No warranty coverage is included at the Discount tier.' },
-    better:  { title: 'Standard — 33 Day Warranty',      copy: 'Balanced protection with a complimentary 33 day warranty.',             note: 'Includes 33 day warranty against defects in parts and labor.' },
-    premium: { title: 'Premium — 183 Day Warranty',      copy: 'Maximum peace of mind with our longest coverage.',                      note: 'Includes 183 day warranty with priority support for warranty claims.' }
-  };
+  var oledSurcharge = {"6":null,"6 Plus":null,"6s":null,"6s Plus":null,"7":null,"7 Plus":null,"8":null,"8 Plus":null,"X":null,"XR":null,"11":null,
+    "12":99,"12 Pro":99,"12 Pro Max":129,"13 Mini":139,"13":109,"13 Pro":189,"13 Pro Max":219,"14":119,"14 Plus":179,"14 Pro":249,"14 Pro Max":349,
+    "15":249,"15 Plus":209,"15 Pro":359,"15 Pro Max":439,"16":299,"16 Plus":409,"16 Pro":449,"16 Pro Max":529};
 
   var priorityOptions = [
-    { id:'standard', label:'Standard Queue', price:0,  description:'Completed in standard order after paid priority jobs. Typical turnaround 1 to 3 business days.' },
-    { id:'priority', label:'Priority',       price:39, description:'Moves ahead of standard jobs. Ideal for same day or next morning pickup.' },
-    { id:'priority_plus', label:'Priority+', price:59, description:'Front of line service. Great for urgent, time sensitive repairs.' },
-    { id:'priority_pro',  label:'Priority Pro', price:99, description:'Drop everything level. Reserved for business critical or emergency requests.' }
+    { id:'standard', label:'Standard Queue', price:0,  description:'Typical 1–3 business days.' },
+    { id:'priority', label:'Priority',       price:39, description:'Move ahead of standard jobs.' },
+    { id:'priority_plus', label:'Priority+', price:59, description:'Front-of-line service.' },
+    { id:'priority_pro',  label:'Priority Pro', price:99, description:'Drop-everything level.' }
   ];
 
+  // Front-end add-ons → bridge keys
   var addonOptions = [
-    { id:'battery',   label:'Battery Replacement',    price:79, description:'Brand new battery installed alongside your screen repair.' },
-    { id:'cleaning',  label:'Charge Port Cleaning',   price:50, description:'Deep clean to restore charging and data port performance.' },
-    { id:'port',      label:'Charge Port Replacement',price:89, description:'Full port swap including parts and labor.' },
-    { id:'protector', label:'Screen Protector Install', price:10, description:'Tempered glass protector installed after repair.' }
+    { id:'battery',   bridge:'batt',  label:'Battery Replacement',  price:79, description:'New battery with screen repair.' },
+    { id:'cleaning',  bridge:'clean', label:'Charge Port Cleaning',  price:50, description:'Deep clean for charging/data port.' },
+    { id:'port',      bridge:'port',  label:'Charge Port Replacement', price:89, description:'Full port swap.' },
+    { id:'protector', bridge:'prot',  label:'Screen Protector Install', price:10, description:'Tempered glass protector.' }
   ];
 
-  var state = { model: models[0] || null, tier: 'better', quality: 'aftermarket', priority: 'standard', addons: {} };
-  var tierDiff = { good: -19, better: 0, premium: 20 };
+  var tierCopy = {
+    good:{title:'Discount — No Warranty', copy:'Best for tight budgets.', note:'No warranty at Discount tier.'},
+    better:{title:'Standard — 33-Day Warranty', copy:'Balanced coverage.', note:'33-day warranty on parts & labor.'},
+    premium:{title:'Premium — 183-Day Warranty', copy:'Max peace of mind.', note:'183-day warranty; priority support.'}
+  };
 
-  var dom = {};
-  var CTA_TEXT='Continue to Pay on Lowbies.com', CTA_PAYPAL_TEXT='Pay with credit card or PayPal', CTA_LOADING_TEXT='Preparing checkout…', CTA_PAYPAL_LOADING_TEXT='Preparing PayPal…', CTA_LOADING_ALT_TEXT='Preparing…';
+  var state = { model: models[0], tier:'better', quality:'aftermarket', priority:'standard', addons:{} };
+  var tierDiff = { good:-19, better:0, premium:20 };
+  var dom={};
 
   function $(id){ return document.getElementById(id); }
-  function money(v){ var a=Math.round(Number(v||0)*100)/100; return '$'+a.toFixed(2); }
-  function toCents(v){ return Math.round(Number(v||0)*100); }
+  function money(v){ v=Math.round(Number(v||0)*100)/100; return '$'+v.toFixed(2); }
+  function getModelById(id){ return models.find(m=>m.id===id)||models[0]; }
+  function getModelKey(){ return (state.model && state.model.id)||models[0].id; }
+  function isOledAvailableKey(k){ return Object.prototype.hasOwnProperty.call(oledSurcharge,k) && oledSurcharge[k]!==null; }
 
-  function getModelById(id){ for(var i=0;i<models.length;i++){ if(models[i].id===id) return models[i]; } return models[0]; }
-  function getActiveModel(){ return state.model || models[0]; }
-  function getModelKey(){ var m=getActiveModel(); return m && (m.payload||m.id); }
-  function getModelLabel(){ var m=getActiveModel(); return m && m.label ? m.label : ''; }
-  function getModelFamily(){ var m=getActiveModel(); return (m && Array.isArray(m.family)) ? m.family.slice() : null; }
-
-  function encodePayloadForUrl(json){
-    if(!json) return '';
-    try{
-      if(typeof TextEncoder!=='undefined'){
-        var bytes=new TextEncoder().encode(json), bin='';
-        for(var i=0;i<bytes.length;i++){ bin+=String.fromCharCode(bytes[i]); }
-        return encodeURIComponent(btoa(bin));
-      }
-    }catch(e){}
-    try{ return encodeURIComponent(btoa(unescape(encodeURIComponent(json)))); }catch(e2){
-      try{ return encodeURIComponent(btoa(json)); }catch(e3){ return encodeURIComponent(json); }
-    }
-  }
-
-  function getSiteBase(){
-    var base = locationOrigin || (locationProtocol + '//' + locationHost);
-    return base ? base.replace(/\/$/,'') : '';
-  }
-
-  // strong checkout link that also includes raw json and cents breakdown
-  function buildManualCheckoutUrl(mode, payloadJson, payload){
-    var base = getSiteBase(); if(!base) return '';
-    var url = base + '/checkout/?add-to-cart=' + PRODUCT_ID;
-
-    var encoded = encodePayloadForUrl(payloadJson);
-    if(encoded) url += '&gbb_payload=' + encoded;
-    url += '&gbb_payload_raw=' + encodeURIComponent(payloadJson);
-
-    if(payload){
-      var t = payload.totals || payload.pricing || {};
-      var basePrice = Number(t.base || payload.base_price || 0);
-      var qualityPrice = Number(t.quality || payload.quality_price || 0);
-      var priorityPrice = Number(t.priority || payload.priority_price || 0);
-      var addonsPrice = Number(t.addons || payload.addons_total || 0);
-      var totalPrice = Number(t.total || payload.total_price || payload.total || 0);
-      if(!isFinite(totalPrice)) totalPrice = basePrice + qualityPrice + priorityPrice + addonsPrice;
-
-      var cents = { base:toCents(basePrice), quality:toCents(qualityPrice), priority:toCents(priorityPrice), addons:toCents(addonsPrice), total:toCents(totalPrice) };
-
-      url += '&gbb_total=' + encodeURIComponent(totalPrice.toFixed(2));
-      url += '&gbb_total_cents=' + encodeURIComponent(cents.total);
-      url += '&gbb_base_cents=' + encodeURIComponent(cents.base);
-      url += '&gbb_quality_cents=' + encodeURIComponent(cents.quality);
-      url += '&gbb_priority_cents=' + encodeURIComponent(cents.priority);
-      url += '&gbb_addons_cents=' + encodeURIComponent(cents.addons);
-
-      url += '&gbb_model=' + encodeURIComponent(getModelKey());
-      url += '&gbb_quality=' + encodeURIComponent(payload.quality);
-      url += '&gbb_priority=' + encodeURIComponent(payload.priority_selection || payload.priority_label || '');
-      url += '&gbb_addon_ids=' + encodeURIComponent((payload.addon_ids||[]).join(','));
-    }
-    if(mode && mode!=='checkout') url += '&checkout_mode=' + encodeURIComponent(mode);
-    return url;
-  }
-
-  function normalizePotentialUrl(v, base){
-    if(!v || typeof v!=='string') return '';
-    var s=v.trim(); if(!s || /\s/.test(s)) return '';
-    if(/^https?:\/\//i.test(s)) return s;
-    if(s.indexOf('//')===0) return (locationProtocol||'https:') + s;
-    if(s.charAt(0)==='/' && base) return base.replace(/\/$/,'') + s;
-    if(s.charAt(0)==='?' && base) return base.replace(/\/$/,'') + '/' + s;
-    if(base && /^[A-Za-z0-9._~!$&'()*+,;=:@/?-]+$/.test(s)) return base.replace(/\/$/,'') + '/' + s.replace(/^\/+/,'');
-    return '';
-  }
-
-  function getCheckoutEndpoints(mode){
-    var base=getSiteBase(); if(!base) return [];
-    var eps=[], seen={};
-    [
-      base + '/wp-json/npc-gbb/v1/checkout',
-      base + '/wp-json/npc/v1/gbb/checkout',
-      base + '/wp-json/npc-gbb/v1/checkout?mode=' + encodeURIComponent(mode||'checkout'),
-      base + '/wp-json/npc/v1/gbb/checkout?mode=' + encodeURIComponent(mode||'checkout')
-    ].forEach(function(u){ if(!seen[u]){ eps.push({url:u,type:'json'}); seen[u]=1; }});
-    [
-      base + '/wp-admin/admin-ajax.php',
-      base + '/wp-admin/admin-ajax.php?action=npc_gbb_checkout'
-    ].forEach(function(u){ if(!seen[u]){ eps.push({url:u,type:'form'}); seen[u]=1; }});
-    return eps;
-  }
-
-  function offerManualCheckout(payloadJson, mode, message, payload){
-    if(!dom.checkoutStatus) return '';
-    var manual = buildManualCheckoutUrl(mode, payloadJson, payload);
-    if(!manual) return '';
-    dom.checkoutStatus.classList.remove('hidden','success');
-    dom.checkoutStatus.classList.add('error');
-    dom.checkoutStatus.textContent='';
-    var span=document.createElement('span');
-    span.textContent=(message?message+' ':'We could not reach checkout automatically. ') + (mode==='paypal'?'Opening secure Lowbies.com checkout instead. ':'Opening secure checkout page now. ');
-    var link=document.createElement('a'); link.href=manual; link.target='_blank'; link.rel='noopener'; link.textContent='Open checkout manually on Lowbies.com';
-    dom.checkoutStatus.appendChild(span); dom.checkoutStatus.appendChild(link); dom.checkoutStatus.appendChild(document.createTextNode('.'));
-    return manual;
-  }
-
-  function parseRedirect(res, base){
-    if(!res) return '';
-    var data=res;
-    if(typeof res==='string'){
-      try{ data=JSON.parse(res); }catch(e){
-        var m=res.match(/https?:\/\/[^"'\s<>]+/); return m&&m[0] ? m[0] : '';
-      }
-    }
-    if(data && typeof data==='object'){
-      var d=normalizePotentialUrl(data.redirect,base) || normalizePotentialUrl(data.url,base);
-      if(d) return d;
-      if(data.data){
-        if(typeof data.data==='string'){ var s=normalizePotentialUrl(data.data,base); if(s) return s; }
-        if(typeof data.data==='object'){
-          var dd=normalizePotentialUrl(data.data.redirect,base) || normalizePotentialUrl(data.data.url,base);
-          if(dd) return dd;
-        }
-      }
-    }
-    if(base && data && data.path){ var p=normalizePotentialUrl(String(data.path),base); if(p) return p; }
-    return '';
-  }
-
-  function redirectTo(url, mode, payloadJson, payload){
-    if(!url) return false;
-    var final=url.charAt(0)==='/' && getSiteBase() ? getSiteBase()+url : url;
-    showStatus(mode==='paypal'?'Opening secure Lowbies.com checkout…':'Redirecting to secure checkout…','success');
-    setTimeout(function(){
-      try{ window.location.href=final; }
-      catch(e){ showStatus('We could not open checkout automatically. Use the link below.','error'); offerManualCheckout(payloadJson,mode,'',payload); setLoading(false); }
-    },150);
-    return true;
-  }
+  function basePrice(){ var k=getModelKey(); return (baseBetter[k]||0)+(tierDiff[state.tier]||0); }
+  function qualityPrice(){ return state.quality!=='oled'?0:(oledSurcharge[getModelKey()]||0); }
+  function getPriorityPrice(){ var p=priorityOptions.find(x=>x.id===state.priority); return p?p.price:0; }
+  function getSelectedAddonDetails(){ return addonOptions.filter(o=>state.addons[o.id]).map(o=>({id:o.id, bridge:o.bridge, label:o.label, price:o.price})); }
+  function getAddonPrice(){ return getSelectedAddonDetails().reduce((a,b)=>a+Number(b.price||0),0); }
+  function computeTotals(){ var b=basePrice(),q=qualityPrice(),p=getPriorityPrice(),a=getAddonPrice(); return {base:b,quality:q,priority:p,addons:a,total:b+q+p+a}; }
 
   function renderSelect(){
     var frag=document.createDocumentFragment();
-    models.forEach(function(m){ var o=document.createElement('option'); o.value=m.id; o.textContent=m.label; frag.appendChild(o); });
-    dom.modelSelect.appendChild(frag);
-    dom.modelSelect.value=getActiveModel().id;
+    models.forEach(m=>{ var o=document.createElement('option'); o.value=m.id; o.textContent=m.label; frag.appendChild(o); });
+    dom.modelSelect.appendChild(frag); dom.modelSelect.value=state.model.id;
   }
-
   function renderQuality(){
-    var c=dom.qualityOptions; c.innerHTML='';
-    var aftermarket=document.createElement('div');
-    aftermarket.className='radio-item active';
-    aftermarket.innerHTML='<input type="radio" name="quality" value="aftermarket" id="quality-aftermarket" checked><label for="quality-aftermarket"><div class="row"><strong>Premium Aftermarket</strong><span class="price-chip">Included</span></div><div class="hint">Excellent color, brightness, and responsiveness for most customers.</div></label>';
-    c.appendChild(aftermarket);
-    var oled=document.createElement('div');
-    oled.className='radio-item';
-    oled.innerHTML='<input type="radio" name="quality" value="oled" id="quality-oled"><label for="quality-oled"><div class="row"><strong>OEM Match OLED</strong><span class="price-chip" id="oledPrice">(+ $0)</span></div><div class="hint">Factory spec vividness and deep blacks. Availability depends on model.</div></label>';
-    c.appendChild(oled);
+    dom.qualityOptions.innerHTML='';
+    var aftermarket=document.createElement('div'); aftermarket.className='radio-item active';
+    aftermarket.innerHTML='<input type="radio" name="quality" value="aftermarket" id="quality-aftermarket" checked><label for="quality-aftermarket"><div class="row"><strong>Premium Aftermarket</strong><span class="price-chip">Included</span></div><div class="hint">Excellent value for most customers.</div></label>';
+    var oled=document.createElement('div'); oled.className='radio-item';
+    oled.innerHTML='<input type="radio" name="quality" value="oled" id="quality-oled"><label for="quality-oled"><div class="row"><strong>OEM-Match OLED</strong><span class="price-chip" id="oledPrice">(+ $0)</span></div><div class="hint">Factory-like vividness (where available).</div></label>';
+    dom.qualityOptions.appendChild(aftermarket); dom.qualityOptions.appendChild(oled);
   }
-
   function renderPriority(){
-    var c=dom.priorityOptions; c.innerHTML='';
-    priorityOptions.forEach(function(opt, i){
-      var div=document.createElement('div');
-      div.className='radio-item' + (i===0?' active':'');
+    dom.priorityOptions.innerHTML='';
+    priorityOptions.forEach((opt,i)=>{
+      var div=document.createElement('div'); div.className='radio-item'+(i===0?' active':'');
       var id='priority-'+opt.id;
-      div.innerHTML='<input type="radio" name="priority" value="'+opt.id+'" id="'+id+'"'+(i===0?' checked':'')+'><label for="'+id+'"><div class="row"><strong>'+opt.label+'</strong><span class="price-chip">'+(opt.price?money(opt.price):'Included')+'</span></div><div class="hint">'+opt.description+'</div></label>';
-      c.appendChild(div);
+      div.innerHTML='<input type="radio" name="priority" value="'+opt.id+'" id="'+id+'" '+(i===0?'checked':'')+'><label for="'+id+'"><div class="row"><strong>'+opt.label+'</strong><span class="price-chip">'+(opt.price?money(opt.price):'Included')+'</span></div><div class="hint">'+opt.description+'</div></label>';
+      dom.priorityOptions.appendChild(div);
     });
   }
-
   function renderAddons(){
-    var c=dom.addonOptions; c.innerHTML='';
-    addonOptions.forEach(function(opt){
-      var wrap=document.createElement('div'); wrap.className='check-item';
+    dom.addonOptions.innerHTML='';
+    addonOptions.forEach(opt=>{
+      var w=document.createElement('div'); w.className='check-item';
       var id='addon-'+opt.id;
-      wrap.innerHTML='<input type="checkbox" id="'+id+'" value="'+opt.id+'"><label for="'+id+'"><div class="row"><strong>'+opt.label+'</strong><span class="price-chip">'+money(opt.price)+'</span></div><div class="hint">'+opt.description+'</div></label>';
-      c.appendChild(wrap);
+      w.innerHTML='<input type="checkbox" id="'+id+'" value="'+opt.id+'"><label for="'+id+'"><div class="row"><strong>'+opt.label+'</strong><span class="price-chip">'+money(opt.price)+'</span></div><div class="hint">'+opt.description+'</div></label>';
+      dom.addonOptions.appendChild(w);
     });
   }
 
-  function syncTabActive(){
-    ['good','better','premium'].forEach(function(t){
-      var tab=$('tab-'+t); if(!tab) return;
-      if(state.tier===t){ tab.classList.add('active'); tab.setAttribute('aria-selected','true'); }
-      else { tab.classList.remove('active'); tab.setAttribute('aria-selected','false'); }
-    });
-    var copy=tierCopy[state.tier];
-    $('tierIndicatorTitle').textContent=copy.title;
-    $('tierIndicatorCopy').textContent=copy.copy;
-    dom.warrantyNote.textContent=copy.note;
-    $('summaryTier').textContent=copy.title;
+  function syncTier(){
+    ['good','better','premium'].forEach(t=>{ var el=$('tab-'+t); if(!el) return; if(state.tier===t){ el.classList.add('active'); el.setAttribute('aria-selected','true'); } else { el.classList.remove('active'); el.setAttribute('aria-selected','false'); }});
+    var c=tierCopy[state.tier]; $('tierIndicatorTitle').textContent=c.title; $('tierIndicatorCopy').textContent=c.copy; dom.warrantyNote.textContent=c.note; $('summaryTier').textContent=c.title;
   }
-
-  function getPriorityPrice(){ var s=priorityOptions.find(function(o){return o.id===state.priority;}); return s? s.price : 0; }
-  function getSelectedAddonDetails(){ return addonOptions.filter(function(o){ return !!state.addons[o.id]; }).map(function(o){ return {id:o.id,label:o.label,price:o.price}; }); }
-  function getAddonPrice(){ return getSelectedAddonDetails().reduce(function(a,b){ return a+Number(b.price||0); },0); }
-  function buildAddonList(){ return getSelectedAddonDetails().map(function(i){ return i.label; }); }
-
-  function isOledAvailableKey(k){ return !(k===undefined||k===null) && Object.prototype.hasOwnProperty.call(oledSurcharge,k) && oledSurcharge[k]!==null; }
-
   function ensureQualityAvailability(){
-    var key=getModelKey(), available=isOledAvailableKey(key), oledInput=$('quality-oled');
-    if(!available){ oledInput.checked=false; oledInput.disabled=true; state.quality='aftermarket'; $('quality-aftermarket').checked=true; $('oledPrice').textContent='(N/A)'; }
-    else { oledInput.disabled=false; $('oledPrice').textContent='(+ '+money(oledSurcharge[key])+')'; }
+    var k=getModelKey(), avail=isOledAvailableKey(k), oled=$('quality-oled');
+    if(!avail){ oled.checked=false; oled.disabled=true; state.quality='aftermarket'; $('quality-aftermarket').checked=true; $('oledPrice').textContent='(N/A)'; }
+    else { oled.disabled=false; $('oledPrice').textContent='(+ '+money(oledSurcharge[k])+')'; }
     updateQualityActive();
   }
-
   function updateQualityActive(){
-    var items=dom.qualityOptions.querySelectorAll('.radio-item'); items.forEach(function(i){ i.classList.remove('active'); });
+    dom.qualityOptions.querySelectorAll('.radio-item').forEach(n=>n.classList.remove('active'));
     var sel= state.quality==='oled' ? 'quality-oled' : 'quality-aftermarket';
-    var el=dom.qualityOptions.querySelector('input#'+sel); if(el){ el.parentElement.classList.add('active'); }
+    var inp=dom.qualityOptions.querySelector('#'+sel); if(inp){ inp.parentElement.classList.add('active'); }
   }
-
   function updatePriorityActive(){
-    var inputs=dom.priorityOptions.querySelectorAll('input[name="priority"]');
-    inputs.forEach(function(i){ if(i.value===state.priority){ i.checked=true; i.parentElement.classList.add('active'); } else { i.parentElement.classList.remove('active'); } });
+    dom.priorityOptions.querySelectorAll('input[name="priority"]').forEach(inp=>{
+      if(inp.value===state.priority){ inp.checked=true; inp.parentElement.classList.add('active'); } else { inp.parentElement.classList.remove('active'); }
+    });
   }
-
-  function updateAddonActive(){
-    addonOptions.forEach(function(o){ var cb=$('addon-'+o.id); if(!cb) return; cb.checked=!!state.addons[o.id]; });
+  function updateAddonsActive(){
+    addonOptions.forEach(opt=>{ var cb=$('addon-'+opt.id); if(cb) cb.checked=!!state.addons[opt.id]; });
   }
-
-  function basePrice(){ var key=getModelKey(); var better=baseBetter[key]||0; return better + (tierDiff[state.tier]||0); }
-  function qualityPrice(){ if(state.quality!=='oled') return 0; var key=getModelKey(); return oledSurcharge[key]||0; }
-
-  function computeTotals(){
-    var base=basePrice(), quality=qualityPrice(), priority=getPriorityPrice(), addons=getAddonPrice();
-    return { base:base, quality:quality, priority:priority, addons:addons, total: base+quality+priority+addons };
-  }
-
   function updateSummary(){
-    dom.summaryModel.textContent=getModelLabel();
-    dom.summaryQuality.textContent= state.quality==='oled' ? 'OEM Match OLED' : 'Premium Aftermarket';
-    var p=priorityOptions.find(function(o){return o.id===state.priority;});
-    dom.summaryPriority.textContent= p ? p.label + (p.price ? ' — '+money(p.price) : ' — Included') : 'Standard Queue';
-    var addons=buildAddonList();
-    dom.summaryAddons.textContent= addons.length ? addons.join(', ') : 'None';
-    var t=computeTotals();
-    dom.priceBase.textContent=money(t.base);
-    dom.priceQuality.textContent=money(t.quality);
-    dom.pricePriority.textContent=money(t.priority);
-    dom.priceAddons.textContent=money(t.addons);
-    dom.priceTotal.textContent=money(t.total);
-    if(dom.floatingTotalAmount) dom.floatingTotalAmount.textContent=money(t.total);
-    dom.summaryWarranty.textContent=tierCopy[state.tier].note;
+    var totals=computeTotals();
+    $('summaryModel').textContent=(state.model&&state.model.label)||'';
+    $('summaryQuality').textContent= state.quality==='oled' ? 'OEM-Match OLED' : 'Premium Aftermarket';
+    var p=priorityOptions.find(x=>x.id===state.priority); $('summaryPriority').textContent= p ? (p.label+(p.price?' — '+money(p.price):' — Included')) : 'Standard Queue';
+    var addList=getSelectedAddonDetails().map(a=>a.label); $('summaryAddons').textContent= addList.length?addList.join(', '):'None';
+    $('priceBase').textContent=money(totals.base); $('priceQuality').textContent=money(totals.quality); $('pricePriority').textContent=money(totals.priority); $('priceAddons').textContent=money(totals.addons);
+    $('priceTotal').textContent=money(totals.total); if(dom.floatingTotalAmount) dom.floatingTotalAmount.textContent=money(totals.total);
+    $('summaryWarranty').textContent=tierCopy[state.tier].note;
   }
 
-  function resetState(){
-    state.model=models[0]; state.tier='better'; state.quality='aftermarket'; state.priority='standard'; state.addons={};
-    dom.modelSelect.value=getActiveModel().id; ensureQualityAvailability(); syncTabActive(); updatePriorityActive(); updateAddonActive(); updateSummary();
+  function siteBase(){
+    if(window.location.origin) return window.location.origin.replace(/\/$/,'');
+    return (window.location.protocol+'//'+window.location.host).replace(/\/$/,'');
   }
 
-  function showStatus(msg,type){ dom.checkoutStatus.textContent=msg; dom.checkoutStatus.classList.remove('hidden','error','success'); dom.checkoutStatus.classList.add(type==='error'?'error':'success'); }
-  function clearStatus(){ dom.checkoutStatus.classList.add('hidden'); dom.checkoutStatus.textContent=''; dom.checkoutStatus.classList.remove('error','success'); }
+  // Build the URL for your existing bridge
+  function buildBridgeUrl(){
+    var model=(state.model&&state.model.id)||'14';
+    var tier=state.tier; // good|better|premium
+    var quality=state.quality; // aftermarket|oled
+    var priorityAmount=getPriorityPrice(); // numeric
+    var bridgeAddons=getSelectedAddonDetails().map(a=>a.bridge); // ['batt','prot',...]
 
-  function setLoading(loading, mode){
-    if(loading){
-      dom.checkoutBtn.setAttribute('disabled','disabled'); dom.checkoutBtn.textContent= mode==='paypal'? CTA_LOADING_ALT_TEXT : CTA_LOADING_TEXT;
-      if(dom.paypalBtn){ dom.paypalBtn.setAttribute('disabled','disabled'); if(dom.paypalBtnLabel){ dom.paypalBtnLabel.textContent= mode==='paypal'? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT; } else { dom.paypalBtn.textContent= mode==='paypal'? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT; } }
-      if(dom.floatingCheckoutBtn) dom.floatingCheckoutBtn.setAttribute('disabled','disabled');
-      if(dom.floatingCheckoutLabel) dom.floatingCheckoutLabel.textContent= mode==='paypal'? CTA_LOADING_ALT_TEXT : CTA_LOADING_TEXT;
-      if(dom.floatingPayBtn){ dom.floatingPayBtn.setAttribute('disabled','disabled'); dom.floatingPayBtn.textContent= mode==='paypal'? CTA_PAYPAL_LOADING_TEXT : CTA_LOADING_ALT_TEXT; }
-    } else {
-      dom.checkoutBtn.removeAttribute('disabled'); dom.checkoutBtn.textContent=CTA_TEXT;
-      if(dom.paypalBtn){ dom.paypalBtn.removeAttribute('disabled'); if(dom.paypalBtnLabel){ dom.paypalBtnLabel.textContent=CTA_PAYPAL_TEXT; } else { dom.paypalBtn.textContent=CTA_PAYPAL_TEXT; } }
-      if(dom.floatingCheckoutBtn) dom.floatingCheckoutBtn.removeAttribute('disabled');
-      if(dom.floatingCheckoutLabel) dom.floatingCheckoutLabel.textContent=CTA_TEXT;
-      if(dom.floatingPayBtn){ dom.floatingPayBtn.removeAttribute('disabled'); dom.floatingPayBtn.textContent=CTA_PAYPAL_TEXT; }
-    }
-  }
+    var u=siteBase()+'/?npc_gbb=1'
+      +'&model='+encodeURIComponent(model)
+      +'&tier='+encodeURIComponent(tier)
+      +'&quality='+encodeURIComponent(quality)
+      +'&priority='+encodeURIComponent(priorityAmount);
 
-  function buildPayload(mode){
-    var totals=computeTotals(), model=getActiveModel(), key=getModelKey(), addonDetails=getSelectedAddonDetails();
-    var addonLabels=addonDetails.map(function(i){return i.label;});
-    var addonIds=addonDetails.map(function(i){return i.id;});
-    var p=priorityOptions.find(function(o){return o.id===state.priority;});
-    var pAmt=p ? p.price : 0;
-    var cents={ base:toCents(totals.base), quality:toCents(totals.quality), priority:toCents(totals.priority), addons:toCents(totals.addons), total:toCents(totals.total) };
-    var lineItems=[];
-    lineItems.push({ key:'base', label:'Screen repair ('+getModelLabel()+')', tier:state.tier, amount:totals.base, amount_cents:cents.base });
-    if(state.quality==='oled' && totals.quality){ lineItems.push({ key:'quality', label:'OLED upgrade', amount:totals.quality, amount_cents:cents.quality }); }
-    if(pAmt){ lineItems.push({ key:'priority', label:p ? p.label : 'Priority service', amount:totals.priority, amount_cents:cents.priority }); }
-    addonDetails.forEach(function(i){ lineItems.push({ key:'addon_'+i.id, label:i.label, amount:Number(i.price||0), amount_cents:toCents(i.price) }); });
-
-    var configuration={
-      product_id:PRODUCT_ID, model:key, model_label:getModelLabel(), model_value:model ? (model.payload||model.id):null, model_id:model?model.id:null,
-      tier:state.tier, tier_label:tierCopy[state.tier].title, tier_note:tierCopy[state.tier].note,
-      quality:state.quality, quality_label: state.quality==='oled'?'OEM Match OLED':'Premium Aftermarket',
-      priority:pAmt, priority_label: p ? p.label : 'Standard Queue', priority_price:pAmt, priority_amount:pAmt, priority_selection:state.priority,
-      addons:addonLabels, addons_detail:addonDetails, addon_ids:addonIds,
-      pricing:totals, pricing_cents:cents, totals:totals, total:totals.total, total_price:totals.total, total_cents:cents.total,
-      base_price:totals.base, base_price_cents:cents.base, quality_price:totals.quality, quality_price_cents:cents.quality,
-      priority_total:totals.priority, priority_total_cents:cents.priority, addons_total:totals.addons,
-      timestamp:new Date().toISOString(), checkout_mode:mode||'checkout', mode:mode||'checkout'
-    };
-    var fam=getModelFamily(); if(fam) configuration.model_family=fam; if(model&&model.payload) configuration.model_payload=model.payload;
-
-    return {
-      product_id:PRODUCT_ID, quantity:1, model:key, model_label:getModelLabel(),
-      tier:state.tier, tier_label:tierCopy[state.tier].title,
-      quality:state.quality, quality_label: state.quality==='oled'?'OEM Match OLED':'Premium Aftermarket',
-      priority:pAmt, priority_label: p ? p.label : 'Standard Queue', priority_amount:pAmt,
-      addons:addonLabels, addon_ids:addonIds, addons_detail:addonDetails, addons_total:totals.addons, addons_total_cents:cents.addons,
-      totals:totals, totals_cents:cents, pricing:totals, pricing_cents:cents,
-      total:totals.total, total_price:totals.total, total_cents:cents.total,
-      subtotal:totals.total, subtotal_price:totals.total, subtotal_cents:cents.total,
-      base_price:totals.base, base_price_cents:cents.base,
-      quality_price:totals.quality, quality_price_cents:cents.quality,
-      priority_price:totals.priority, priority_total:totals.priority, priority_total_cents:cents.priority,
-      line_items:lineItems, configuration:configuration, checkout_mode:mode||'checkout', mode:mode||'checkout',
-      priority_selection:state.priority
-    };
-  }
-
-  // direct paypal one click url
-  function buildDirectPaypalUrl(payload){
-    var totals = payload && payload.totals ? payload.totals : computeTotals();
-    var amount = (Number(totals.total)||0).toFixed(2);
-    var item = 'Screen Repair - ' + getModelLabel() + ' (' + (payload.quality_label || (payload.quality==='oled'?'OLED':'Aftermarket')) + ')';
-    var u = 'https://www.paypal.com/cgi-bin/webscr?cmd=_xclick'
-            + '&business=' + encodeURIComponent(PAYPAL_BUSINESS_EMAIL)
-            + '&item_name=' + encodeURIComponent(item)
-            + '&amount=' + encodeURIComponent(amount)
-            + '&currency_code=' + encodeURIComponent(PAYPAL_CURRENCY)
-            + '&no_shipping=1'
-            + '&return=' + encodeURIComponent(PAYPAL_RETURN_URL)
-            + '&cancel_return=' + encodeURIComponent(PAYPAL_CANCEL_URL);
-    try{
-      var echo = btoa(unescape(encodeURIComponent(JSON.stringify({
-        m:getModelKey(), t:payload.tier, q:payload.quality, p:payload.priority_amount, a:payload.addon_ids, c:(Number(totals.total)||0)
-      }))));
-      u += '&custom=' + encodeURIComponent(echo);
-    }catch(e){}
+    if(bridgeAddons.length){ u+='&addons='+encodeURIComponent(bridgeAddons.join(',')); }
     return u;
   }
 
-  function submitCheckout(mode){
-    mode = mode || 'checkout';
-    clearStatus(); setLoading(true, mode);
-    var payload = buildPayload(mode);
-    var payloadJson = JSON.stringify(payload);
-    window.gbbPayloadPreview = payload;
-
-    var endpoints = typeof fetch==='function' ? getCheckoutEndpoints(mode) : [];
-    var manualUrl = buildManualCheckoutUrl(mode, payloadJson, payload);
-
-    if(!endpoints.length){
-      if(manualUrl){ redirectTo(manualUrl, mode, payloadJson, payload); setTimeout(function(){ setLoading(false); }, 1200); }
-      else { showStatus('Unable to prepare checkout link. Please contact support.','error'); offerManualCheckout(payloadJson,mode,'',payload); setLoading(false); }
-      return;
-    }
-
-    showStatus(mode==='paypal'?'Opening secure Lowbies.com checkout…':'Contacting Lowbies.com checkout…','success');
-
-    (function attempt(i){
-      if(i>=endpoints.length){
-        if(manualUrl){ redirectTo(manualUrl, mode, payloadJson, payload); setTimeout(function(){ setLoading(false); }, 1200); }
-        else { showStatus('Unable to prepare checkout link.','error'); offerManualCheckout(payloadJson,mode,'',payload); setLoading(false); }
-        return;
-      }
-      var ep=endpoints[i], opts={method:'POST', credentials:'include'};
-      if(ep.type==='json'){ opts.headers={'Content-Type':'application/json'}; opts.body=payloadJson; }
-      else { var f=new FormData(); if(ep.url.indexOf('action=')===-1) f.append('action','npc_gbb_checkout'); f.append('mode',mode); f.append('payload',payloadJson); opts.body=f; }
-
-      fetch(ep.url, opts).then(function(r){
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        var ct=r.headers.get('content-type')||''; return ct.indexOf('application/json')!==-1? r.json(): r.text();
-      }).then(function(body){
-        var redirectUrl = parseRedirect(body, getSiteBase());
-        if(redirectUrl){ redirectTo(redirectUrl, mode, payloadJson, payload); setTimeout(function(){ setLoading(false); }, 1200); }
-        else { throw new Error('No redirect URL in response'); }
-      }).catch(function(){ attempt(i+1); });
-    })(0);
-  }
-
-  function cacheDom(){
-    dom = {
-      modelSelect: $('modelSelect'),
-      qualityOptions: $('qualityOptions'),
-      priorityOptions: $('priorityOptions'),
-      addonOptions: $('addonOptions'),
-      summaryModel: $('summaryModel'),
-      summaryTier: $('summaryTier'),
-      summaryQuality: $('summaryQuality'),
-      summaryPriority: $('summaryPriority'),
-      summaryAddons: $('summaryAddons'),
-      priceBase: $('priceBase'),
-      priceQuality: $('priceQuality'),
-      pricePriority: $('pricePriority'),
-      priceAddons: $('priceAddons'),
-      priceTotal: $('priceTotal'),
-      floatingCheckoutBtn: $('floatingCheckoutBtn'),
-      floatingCheckoutLabel: $('floatingCheckoutLabel'),
-      floatingPayBtn: $('floatingPayBtn'),
-      floatingTotalAmount: $('floatingTotalAmount'),
-      paypalBtn: $('paypalBtn'),
-      paypalBtnLabel: $('paypalBtnLabel'),
-      summaryWarranty: $('summaryWarranty'),
-      warrantyNote: $('warrantyNote'),
-      checkoutBtn: $('checkoutBtn'),
-      checkoutStatus: $('checkoutStatus'),
-      resetBtn: $('resetBtn')
-    };
+  function showStatus(msg,type){
+    dom.checkoutStatus.textContent=msg;
+    dom.checkoutStatus.classList.remove('hidden','error','success');
+    dom.checkoutStatus.classList.add(type==='error'?'error':'success');
   }
 
   function attachEvents(){
-    ['tab-good','tab-better','tab-premium'].forEach(function(id){
-      var tab=$(id); if(!tab) return;
-      tab.addEventListener('click', function(){ state.tier=tab.dataset.tier; syncTabActive(); updateSummary(); });
-      tab.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tab.click(); } });
+    ['tab-good','tab-better','tab-premium'].forEach(id=>{
+      var t=$(id); if(!t) return;
+      t.addEventListener('click',()=>{ state.tier=t.dataset.tier; syncTier(); updateSummary(); });
+      t.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); t.click(); }});
     });
 
     dom.modelSelect.addEventListener('change', function(){ state.model=getModelById(this.value); ensureQualityAvailability(); updateSummary(); });
 
-    dom.qualityOptions.addEventListener('change', function(e){ if(e.target && e.target.name==='quality'){ state.quality=e.target.value; updateQualityActive(); updateSummary(); } });
+    dom.qualityOptions.addEventListener('change', function(e){ if(e.target && e.target.name==='quality'){ state.quality=e.target.value; updateQualityActive(); updateSummary(); }});
+    dom.priorityOptions.addEventListener('change', function(e){ if(e.target && e.target.name==='priority'){ state.priority=e.target.value; updatePriorityActive(); updateSummary(); }});
 
-    dom.priorityOptions.addEventListener('change', function(e){ if(e.target && e.target.name==='priority'){ state.priority=e.target.value; updatePriorityActive(); updateSummary(); } });
+    addonOptions.forEach(opt=>{
+      var cb=$('addon-'+opt.id); if(!cb) return;
+      cb.addEventListener('change', function(){ if(this.checked){ state.addons[opt.id]=true; } else { delete state.addons[opt.id]; } updateSummary(); });
+    });
 
-    addonOptions.forEach(function(opt){ var cb=$('addon-'+opt.id); if(!cb) return; cb.addEventListener('change', function(){ if(this.checked){ state.addons[opt.id]=true; } else { delete state.addons[opt.id]; } updateSummary(); }); });
+    $('resetBtn').addEventListener('click', function(){ state={ model:models[0], tier:'better', quality:'aftermarket', priority:'standard', addons:{} }; dom.modelSelect.value=state.model.id; ensureQualityAvailability(); syncTier(); updatePriorityActive(); updateAddonsActive(); updateSummary(); showStatus('Selections reset.','success'); });
 
-    dom.resetBtn.addEventListener('click', function(){ resetState(); showStatus('Selections reset.','success'); });
+    function go(){ var url=buildBridgeUrl(); showStatus('Opening secure checkout…','success'); window.location.href=url; }
 
-    dom.checkoutBtn.addEventListener('click', function(){ submitCheckout('checkout'); });
-    if(dom.floatingCheckoutBtn){ dom.floatingCheckoutBtn.addEventListener('click', function(){ submitCheckout('checkout'); }); }
+    $('checkoutBtn').addEventListener('click', go);
+    $('paypalBtn').addEventListener('click', go); // both go through Woo checkout; payment chosen there
+    $('floatingCheckoutBtn').addEventListener('click', go);
+    $('floatingPayBtn').addEventListener('click', go);
+  }
 
-    // direct paypal (your email)
-    if(dom.paypalBtn){
-      dom.paypalBtn.addEventListener('click', function(){
-        clearStatus(); setLoading(true,'paypal');
-        var payload=buildPayload('paypal'); var direct=buildDirectPaypalUrl(payload);
-        setTimeout(function(){
-          try{ window.open(direct,'_blank','noopener'); showStatus('Opening PayPal…','success'); }
-          catch(e){ showStatus('Could not open PayPal. Pop ups blocked?','error'); }
-          finally{ setLoading(false); }
-        },120);
-      });
-    }
-    if(dom.floatingPayBtn){
-      dom.floatingPayBtn.addEventListener('click', function(){
-        clearStatus(); setLoading(true,'paypal');
-        var payload=buildPayload('paypal'); var direct=buildDirectPaypalUrl(payload);
-        setTimeout(function(){ try{ window.open(direct,'_blank','noopener'); showStatus('Opening PayPal…','success'); } catch(e){ showStatus('Could not open PayPal.','error'); } finally{ setLoading(false); } },120);
-      });
-    }
+  function cacheDom(){
+    dom = {
+      modelSelect:$('modelSelect'),
+      qualityOptions:$('qualityOptions'),
+      priorityOptions:$('priorityOptions'),
+      addonOptions:$('addonOptions'),
+      summaryModel:$('summaryModel'),
+      summaryTier:$('summaryTier'),
+      summaryQuality:$('summaryQuality'),
+      summaryPriority:$('summaryPriority'),
+      summaryAddons:$('summaryAddons'),
+      priceBase:$('priceBase'),
+      priceQuality:$('priceQuality'),
+      pricePriority:$('pricePriority'),
+      priceAddons:$('priceAddons'),
+      priceTotal:$('priceTotal'),
+      floatingCheckoutBtn:$('floatingCheckoutBtn'),
+      floatingCheckoutLabel:$('floatingCheckoutLabel'),
+      floatingPayBtn:$('floatingPayBtn'),
+      floatingTotalAmount:$('floatingTotalAmount'),
+      paypalBtn:$('paypalBtn'),
+      paypalBtnLabel:$('paypalBtnLabel'),
+      summaryWarranty:$('summaryWarranty'),
+      warrantyNote:$('warrantyNote'),
+      checkoutBtn:$('checkoutBtn'),
+      checkoutStatus:$('checkoutStatus'),
+      resetBtn:$('resetBtn')
+    };
   }
 
   function init(){
-    cacheDom(); renderSelect(); renderQuality(); renderPriority(); renderAddons();
-    ensureQualityAvailability(); syncTabActive(); updatePriorityActive(); updateAddonActive(); updateSummary(); attachEvents();
+    cacheDom(); renderSelect(); renderQuality(); renderPriority(); renderAddons(); ensureQualityAvailability(); syncTier(); updatePriorityActive(); updateAddonsActive(); updateSummary(); attachEvents();
   }
 
   document.addEventListener('DOMContentLoaded', init);
