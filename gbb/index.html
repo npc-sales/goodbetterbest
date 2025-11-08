@@ -403,17 +403,19 @@
 
   function offerManualCheckout(payloadJson, mode, message){
     if(!dom.checkoutStatus){
-      return;
+      return '';
     }
     var manualUrl = buildManualCheckoutUrl(mode, payloadJson);
     if(!manualUrl){
-      return;
+      return '';
     }
     dom.checkoutStatus.classList.remove('hidden', 'success');
     dom.checkoutStatus.classList.add('error');
     dom.checkoutStatus.textContent = '';
     var note = document.createElement('span');
-    note.textContent = (message ? message + ' ' : 'We could not reach checkout automatically. ');
+    var prefix = message ? message + ' ' : 'We could not reach checkout automatically. ';
+    var modeCopy = mode === 'paypal' ? 'We\'re opening the secure Lowbies.com checkout instead.' : 'We\'re opening the secure checkout page for you now.';
+    note.textContent = prefix + modeCopy + ' ';
     var link = document.createElement('a');
     link.href = manualUrl;
     link.target = '_blank';
@@ -422,6 +424,7 @@
     dom.checkoutStatus.appendChild(note);
     dom.checkoutStatus.appendChild(link);
     dom.checkoutStatus.appendChild(document.createTextNode('.'));
+    return manualUrl;
   }
 
   function renderSelect(){
@@ -832,7 +835,14 @@
       console.error('Checkout error', error);
       var message = error && error.message ? error.message : 'Checkout request failed. Please try again.';
       showStatus(message, 'error');
-      offerManualCheckout(payloadJson, mode, message);
+      var manualUrl = offerManualCheckout(payloadJson, mode, message);
+      if(manualUrl){
+        setTimeout(function(){
+          try {
+            window.location.href = manualUrl;
+          } catch(_err){}
+        }, 400);
+      }
     }).finally(function(){
       setLoading(false);
     });
